@@ -1,0 +1,32 @@
+# Carpeta de adjuntos de tickets: solo se sirven archivos, nunca se ejecutan.
+
+# Sin listado de directorios ni CGI
+Options -Indexes -ExecCGI
+
+# No tratar ningún archivo como script
+RemoveHandler .php .php3 .php4 .php5 .php7 .php8 .phtml .phar .pl .py .cgi .sh .asp .aspx .jsp .shtml
+RemoveType .php .php3 .php4 .php5 .php7 .php8 .phtml .phar
+
+# Apagar el intérprete PHP en esta carpeta (mod_php)
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule php_module>
+    php_flag engine off
+</IfModule>
+
+# Bloquear por completo extensiones ejecutables y archivos ocultos (.htaccess, etc.)
+<FilesMatch "(?i)\.(php\d?|phtml|phar|pl|py|cgi|sh|asp|aspx|jsp|shtml|htaccess|htpasswd|exe|bat|cmd|ps1|js|html?|svg)$">
+    Require all denied
+</FilesMatch>
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Evitar que el navegador "adivine" el tipo y ejecute contenido
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>

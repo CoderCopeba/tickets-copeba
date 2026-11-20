@@ -1,0 +1,25 @@
+# Secretos
+/.env
+/.env.*
+!/.env.example
+
+# Dependencias
+/vendor/
+
+# Volcados de base de datos (contienen datos reales)
+*.sql
+!/docs/schema.sql
+
+# Adjuntos subidos por usuarios (se conserva la protección)
+/public/document/*
+!/public/document/.htaccess
+
+# Scripts temporales
+/tools/
+
+# Sistema / editores
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
+*.log
