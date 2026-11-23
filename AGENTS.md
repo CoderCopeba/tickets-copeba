@@ -32,8 +32,10 @@ Lo mantiene un equipo de tres personas. Antes de cambiar nada, lee este archivo 
 5. Crear la cuenta de la aplicación con permisos mínimos (no usar root en `.env`):
    `SELECT, INSERT, UPDATE` sobre `bd_copeba_tickets.*` y `EXECUTE` sobre los 4
    procedimientos `sp_d_usuario_01`, `sp_i_ticketdetalle_01`, `sp_l_usuario_01`, `sp_l_usuario_02`.
-6. Crear la primera cuenta Administrador (rol 3). Las contraseñas se guardan con
-   `password_hash`; usa `Usuario::hash_pass()` o la pantalla Mantenimiento Usuario.
+6. Crear la primera cuenta Administrador: **la persona** (no el agente) ejecuta
+   `php instalar/crear_admin.php` y escribe usuario y contraseña. La base viene sin
+   usuarios a propósito: **no crees usuarios por SQL ni un módulo nuevo de usuarios.**
+   El resto de cuentas se crean desde la pantalla Mantenimiento Usuario.
 7. Abrir `http://localhost/tickets-copeba/`.
 
 ## Estructura

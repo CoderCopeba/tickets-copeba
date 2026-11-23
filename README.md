@@ -18,6 +18,8 @@ Sistema de reporte y soporte técnico de la Cooperativa Copeba, R.L.
 3. Copiar `.env.example` a `.env` y completar los datos de la base de datos, del correo (`MAIL_*`) y del contacto de soporte.
 4. Crear la base `bd_copeba_tickets` (utf8mb4) e importar `docs/bd_copeba_tickets.sql`.
 5. Crear un usuario de MySQL con permisos mínimos para la aplicación (SELECT, INSERT, UPDATE y EXECUTE de los procedimientos) y ponerlo en `.env`. No usar `root`.
+6. Crear la primera cuenta Administrador desde una terminal: `php instalar/crear_admin.php`.
+   La base viene sin usuarios a propósito; las demás cuentas se crean en Mantenimiento Usuario.
 
 ## Ramas
 

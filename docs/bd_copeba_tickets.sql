@@ -1,7 +1,7 @@
 -- Esquema de TICKETS-COPEBA (solo estructura; sin datos de usuarios ni tickets)
--- Generado: 2026-11-20 desde la base de referencia (Fase 3)
+-- Actualizado: 2026-11-23 (utf8mb4, categorías iniciales)
 -- Importar en una base vacía. Procedimientos con SQL SECURITY INVOKER y sin DEFINER.
--- Tras importar: crear categorías (tm_categoria) y la primera cuenta Administrador.
+-- Tras importar: crear la primera cuenta Administrador con  php instalar/crear_admin.php
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -15,10 +15,10 @@ DROP TABLE IF EXISTS `tm_rol`;
 
 CREATE TABLE `tm_rol` (
   `rol_id` int NOT NULL,
-  `rol_nom` varchar(50) COLLATE utf8mb3_spanish_ci NOT NULL,
+  `rol_nom` varchar(50) COLLATE utf8mb4_spanish_ci NOT NULL,
   PRIMARY KEY (`rol_id`),
   UNIQUE KEY `uq_tm_rol_nom` (`rol_nom`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_spanish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 INSERT INTO `tm_rol` (`rol_id`, `rol_nom`) VALUES
   (1,'Usuario'),
@@ -28,50 +28,57 @@ INSERT INTO `tm_rol` (`rol_id`, `rol_nom`) VALUES
 CREATE TABLE `td_documento` (
   `doc_id` int NOT NULL AUTO_INCREMENT,
   `tick_id` int NOT NULL,
-  `doc_nom` varchar(400) CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci NOT NULL,
+  `doc_nom` varchar(400) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
   `fech_crea` datetime NOT NULL,
   `est` int NOT NULL,
   PRIMARY KEY (`doc_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_spanish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 CREATE TABLE `td_ticketdetalle` (
   `tickd_id` int NOT NULL AUTO_INCREMENT,
   `tick_id` int NOT NULL,
   `usu_id` int NOT NULL,
-  `tickd_descrip` mediumtext CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci NOT NULL,
+  `tickd_descrip` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
   `fech_crea` datetime NOT NULL,
   `est` int NOT NULL,
   PRIMARY KEY (`tickd_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_spanish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 CREATE TABLE `tm_categoria` (
   `cat_id` int NOT NULL AUTO_INCREMENT,
-  `cat_nom` varchar(150) CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci NOT NULL,
+  `cat_nom` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
   `est` int NOT NULL,
   PRIMARY KEY (`cat_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_spanish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+-- Categorías iniciales (se pueden ampliar después)
+INSERT INTO `tm_categoria` (`cat_id`, `cat_nom`, `est`) VALUES
+  (1,'Hardware',1),
+  (2,'Software',1),
+  (3,'Incidencia',1),
+  (4,'Petición de Servicio',1);
 
 CREATE TABLE `tm_ticket` (
   `tick_id` int NOT NULL AUTO_INCREMENT,
   `usu_id` int NOT NULL,
   `cat_id` int NOT NULL,
-  `tick_titulo` varchar(250) CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci NOT NULL,
-  `tick_descrip` mediumtext CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci NOT NULL,
-  `tick_estado` varchar(15) CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci DEFAULT NULL,
+  `tick_titulo` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
+  `tick_descrip` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
+  `tick_estado` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci DEFAULT NULL,
   `fech_crea` datetime DEFAULT NULL,
   `usu_asig` int DEFAULT NULL,
   `fech_asig` datetime DEFAULT NULL,
   `est` int NOT NULL,
   PRIMARY KEY (`tick_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_spanish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 CREATE TABLE `tm_usuario` (
   `usu_id` int NOT NULL AUTO_INCREMENT,
-  `usu_nom` varchar(150) CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci DEFAULT NULL,
-  `usu_ape` varchar(150) CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci DEFAULT NULL,
-  `usu_usuario` varchar(30) COLLATE utf8mb3_spanish_ci NOT NULL,
-  `usu_correo` varchar(150) CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci NOT NULL,
-  `usu_pass` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci NOT NULL,
+  `usu_nom` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `usu_ape` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `usu_usuario` varchar(30) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `usu_correo` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
+  `usu_pass` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
   `rol_id` int NOT NULL,
   `fech_crea` datetime DEFAULT NULL,
   `fech_modi` datetime DEFAULT NULL,
@@ -81,7 +88,7 @@ CREATE TABLE `tm_usuario` (
   UNIQUE KEY `uq_tm_usuario_usu_usuario` (`usu_usuario`),
   KEY `fk_tm_usuario_rol` (`rol_id`),
   CONSTRAINT `fk_tm_usuario_rol` FOREIGN KEY (`rol_id`) REFERENCES `tm_rol` (`rol_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_spanish_ci COMMENT='Tabla Mantenedor de Usuarios';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Tabla Mantenedor de Usuarios';
 
 DELIMITER $$
 
