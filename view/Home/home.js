@@ -102,7 +102,22 @@
         }
     }
 
+    /* Recién iniciada la sesión: círculo de éxito animado, sin botón, se cierra solo */
+    function bienvenida() {
+        var nombre = document.body.getAttribute('data-bienvenida');
+        if (nombre === null || typeof swal !== 'function') { return; }
+        swal({
+            title: nombre ? '¡Bienvenido, ' + nombre + '!' : '¡Bienvenido!',
+            text: 'Sesión iniciada correctamente',
+            type: 'success',
+            timer: 1600,
+            showConfirmButton: false,
+            allowOutsideClick: true
+        });
+    }
+
     $(function () {
+        bienvenida();
         $.post('../../controller/inicio.php?op=resumen')
             .done(function (datos) {
                 if (typeof datos === 'string') { datos = JSON.parse(datos); }

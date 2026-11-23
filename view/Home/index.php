@@ -2,6 +2,9 @@
     require_once("../../config/conexion.php");
     requiere_sesion("vista");
     $rol = rol_actual();
+    /* Animación de bienvenida solo justo después de iniciar sesión */
+    $bienvenida = !empty($_SESSION["bienvenida"]);
+    unset($_SESSION["bienvenida"]);
     $ico = array(
         "ticket" => '<path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/>',
         "abierto" => '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 2v4M16 2v4M4 10h16"/><circle cx="15" cy="15" r="2"/>',
@@ -17,7 +20,7 @@
     <?php require_once("../MainHead/head.php");?>
     <title>Copeba · Inicio</title>
 </head>
-<body class="with-side-menu">
+<body class="with-side-menu"<?php if ($bienvenida) { ?> data-bienvenida="<?php echo e($_SESSION["usu_nom"] ?? ""); ?>"<?php } ?>>
     <?php require_once("../MainHeader/header.php");?>
     <?php require_once("../MainNav/nav.php");?>
 

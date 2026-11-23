@@ -118,6 +118,7 @@
                     $_SESSION["usu_nom"]=$fila["usu_nom"];
                     $_SESSION["usu_ape"]=$fila["usu_ape"];
                     $_SESSION["rol_id"]=(int)$fila["rol_id"];
+                    $_SESSION["bienvenida"]=true;   /* el Inicio muestra la animación de éxito una sola vez */
                     header("Location:".Conectar::ruta()."view/Home/");
                     exit();
                 }
