@@ -1,0 +1,8 @@
+{
+    "name": "copeba/tickets",
+    "description": "HelpDesk Cooperativa Copeba",
+    "type": "project",
+    "require": {
+        "phpmailer/phpmailer": "^7.2"
+    }
+}
