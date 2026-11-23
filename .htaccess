@@ -10,6 +10,7 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteRule ^docs(?:/|$) - [F,L]
+    RewriteRule ^instalar(?:/|$) - [F,L]
 </IfModule>
 
 <Files ".htaccess">
