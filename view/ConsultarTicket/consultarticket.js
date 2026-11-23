@@ -18,10 +18,6 @@ function recargar() {
     $('#ticket_data').DataTable().ajax.reload();
 }
 
-function ver(tick_id) {
-    window.open('../DetalleTicket/?ID=' + encodeURIComponent(tick_id));
-}
-
 function asignar(tick_id) {
     $('#tick_id').val(tick_id);
     $('#mdltitulo').html('Asignar Agente');

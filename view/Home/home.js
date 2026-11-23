@@ -22,7 +22,7 @@
     }
 
     function botonVer(id) {
-        return $('<a class="cp-ver" target="_blank" rel="noopener">')
+        return $('<a class="cp-ver">')
             .attr('href', '../DetalleTicket/?ID=' + encodeURIComponent(id))
             .attr('title', 'Ver ticket ' + Copeba.folio(id))
             .attr('aria-label', 'Ver ticket ' + Copeba.folio(id))

@@ -117,7 +117,7 @@
             $sub_array[] = ticket_nombre_asignado($usuario, $row["usu_asig"]);
         }
 
-        $sub_array[] = '<button type="button" onClick="ver('.$id.');"  id="'.$id.'" class="btn btn-inline btn-primary btn-sm ladda-button"><i class="fa fa-eye"></i></button>';
+        $sub_array[] = '<a href="../DetalleTicket/?ID='.$id.'" class="btn btn-inline btn-primary btn-sm" title="Ver ticket" aria-label="Ver ticket '.$id.'"><i class="fa fa-eye"></i></a>';
         return $sub_array;
     }
 
