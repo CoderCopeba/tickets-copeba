@@ -90,6 +90,12 @@
 					exit();
                 }
 
+                /* Demasiados intentos fallidos: bloqueo temporal */
+                if (login_bloqueado($usu_usuario)){
+                    header("Location:".Conectar::ruta()."index.php?m=3");
+                    exit();
+                }
+
                 /* El rol se lee de la base de datos, no del formulario */
                 $sql = "SELECT usu_id, usu_nom, usu_ape, rol_id, usu_pass FROM tm_usuario WHERE usu_usuario=? and est=1";
                 $stmt=$conectar->prepare($sql);
@@ -101,11 +107,12 @@
                     $ok = $this->verificar_pass_usuario($fila["usu_id"], $pass, $fila["usu_pass"]);
                 } else {
                     /* mismo coste que un login real, para no revelar qué usuarios existen */
-                    password_verify($pass, password_hash(random_bytes(16), PASSWORD_DEFAULT));
+                    password_verify($pass, password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT));
                     $ok = false;
                 }
 
                 if ($ok){
+                    login_exito($usu_usuario);
                     session_regenerate_id(true);
                     $_SESSION["usu_id"]=(int)$fila["usu_id"];
                     $_SESSION["usu_nom"]=$fila["usu_nom"];
@@ -114,6 +121,7 @@
                     header("Location:".Conectar::ruta()."view/Home/");
                     exit();
                 }
+                login_fallo($usu_usuario);
                 header("Location:".Conectar::ruta()."index.php?m=1");
                 exit();
             }
@@ -171,7 +179,8 @@
             $sql=$conectar->prepare($sql);
             $sql->bindValue(1, $usu_id);
             $sql->execute();
-            return $resultado=$sql->fetchAll();
+            $sql->closeCursor();
+            return array();
         }
 
         public function get_usuario(){
@@ -180,7 +189,9 @@
             $sql="call sp_l_usuario_01()";
             $sql=$conectar->prepare($sql);
             $sql->execute();
-            return $resultado=$sql->fetchAll();
+            $resultado=$sql->fetchAll();
+            $sql->closeCursor();
+            return $resultado;
         }
 
         /* Usuarios a los que se puede asignar un ticket: Soporte y Administrador activos */
@@ -210,7 +221,9 @@
             $sql=$conectar->prepare($sql);
             $sql->bindValue(1, $usu_id);
             $sql->execute();
-            return $resultado=$sql->fetchAll();
+            $resultado=$sql->fetchAll();
+            $sql->closeCursor();
+            return $resultado;
         }
 
         public function get_usuario_total_x_id($usu_id){

@@ -1,6 +1,11 @@
 <?php
     require_once("config/conexion.php");
     if(isset($_POST["enviar"]) and $_POST["enviar"]=="si"){
+        /* El formulario debe traer el token de esta sesión (protección CSRF) */
+        if (!csrf_valido()){
+            header("Location:".Conectar::ruta()."index.php?m=4");
+            exit();
+        }
         require_once("models/Usuario.php");
         $usuario = new Usuario();
         $usuario->login();
@@ -65,6 +70,16 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16.5v.5"/></svg>
                     Escribe tu usuario y tu contraseña.
                 </div>
+            <?php } elseif ($mensaje === "3") { ?>
+                <div class="cp-alerta" role="alert">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                    Demasiados intentos fallidos. Espera 15 minutos o contacta a Informática.
+                </div>
+            <?php } elseif ($mensaje === "4") { ?>
+                <div class="cp-alerta" role="alert">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                    La página estuvo abierta demasiado tiempo. Vuelve a intentarlo.
+                </div>
             <?php } ?>
 
             <div class="cp-campo">
@@ -94,6 +109,7 @@
             </div>
 
             <input type="hidden" name="enviar" value="si">
+            <input type="hidden" name="csrf_token" value="<?php echo e(csrf_token()); ?>">
             <button type="submit" class="cp-boton">
                 Acceder
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
