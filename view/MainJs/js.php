@@ -21,6 +21,9 @@ $.ajaxSetup({ headers: { "X-CSRF-Token": $('meta[name="csrf-token"]').attr("cont
 <script src="../../public/js/lib/summernote/summernote-es-ES.min.js"></script>
 
 <script src="../../public/js/lib/select2/select2.full.min.js"></script>
+
+<!-- Recursos compartidos (alertas, tablas, editor, peticiones): public/js/copeba.js -->
+<script src="../../public/js/copeba.js?v=<?php echo filemtime(__DIR__."/../../public/js/copeba.js"); ?>"></script>
 <script>
 /* Menú lateral en celular: abrir / cerrar */
 (function () {

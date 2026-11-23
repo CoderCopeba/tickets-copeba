@@ -127,27 +127,6 @@
             }
             break;
 
-        /* ===== Cualquier usuario con sesión, siempre sobre SU PROPIO id ===== */
-        case "total";
-            $datos=$usuario->get_usuario_total_x_id(usuario_actual_id());
-            echo json_encode(array("TOTAL" => $datos[0]["TOTAL"] ?? 0));
-            break;
-
-        case "totalabierto";
-            $datos=$usuario->get_usuario_totalabierto_x_id(usuario_actual_id());
-            echo json_encode(array("TOTAL" => $datos[0]["TOTAL"] ?? 0));
-            break;
-
-        case "totalcerrado";
-            $datos=$usuario->get_usuario_totalcerrado_x_id(usuario_actual_id());
-            echo json_encode(array("TOTAL" => $datos[0]["TOTAL"] ?? 0));
-            break;
-
-        case "grafico";
-            $datos=$usuario->get_usuario_grafico(usuario_actual_id());
-            echo json_encode($datos);
-            break;
-
         /* ===== Soporte y Administrador: combo de agentes para asignar ===== */
         case "combo";
             requiere_rol(ROLES_SOPORTE);

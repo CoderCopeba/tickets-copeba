@@ -2,16 +2,6 @@
    Todo el texto que viene de la base se inserta con .text() (nunca como HTML). */
 (function () {
 
-    function fecha(valor) {
-        if (!valor) { return ''; }
-        var p = String(valor).substr(0, 10).split('-');
-        return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : valor;
-    }
-
-    function folio(id) {
-        return '#' + ('000' + id).slice(-3);
-    }
-
     function hoy() {
         var d = new Date();
         return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
@@ -34,8 +24,8 @@
     function botonVer(id) {
         return $('<a class="cp-ver" target="_blank" rel="noopener">')
             .attr('href', '../DetalleTicket/?ID=' + encodeURIComponent(id))
-            .attr('title', 'Ver ticket ' + folio(id))
-            .attr('aria-label', 'Ver ticket ' + folio(id))
+            .attr('title', 'Ver ticket ' + Copeba.folio(id))
+            .attr('aria-label', 'Ver ticket ' + Copeba.folio(id))
             .html('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>');
     }
 
@@ -49,12 +39,12 @@
         }
         $.each(filas, function (_, t) {
             $cuerpo.append($('<tr>').append(
-                $('<td class="cp-mono">').text(folio(t.tick_id)),
+                $('<td class="cp-mono">').text(Copeba.folio(t.tick_id)),
                 $('<td>').text(t.tick_titulo),
                 $('<td class="cp-suave">').text(t.cat_nom),
                 $('<td>').append(estado(t)),
                 $('<td>').append(soporte(t)),
-                $('<td class="cp-mono">').text(fecha(t.fech_crea)),
+                $('<td class="cp-mono">').text(Copeba.fecha(t.fech_crea)),
                 $('<td>').append(botonVer(t.tick_id))
             ));
         });
@@ -105,15 +95,8 @@
     /* Recién iniciada la sesión: círculo de éxito animado, sin botón, se cierra solo */
     function bienvenida() {
         var nombre = document.body.getAttribute('data-bienvenida');
-        if (nombre === null || typeof swal !== 'function') { return; }
-        swal({
-            title: nombre ? '¡Bienvenido, ' + nombre + '!' : '¡Bienvenido!',
-            text: 'Sesión iniciada correctamente',
-            type: 'success',
-            timer: 1600,
-            showConfirmButton: false,
-            allowOutsideClick: true
-        });
+        if (nombre === null || typeof Copeba === 'undefined') { return; }
+        Copeba.exito('Sesión iniciada correctamente', nombre ? '¡Bienvenido, ' + nombre + '!' : '¡Bienvenido!');
     }
 
     $(function () {

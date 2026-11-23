@@ -316,31 +316,6 @@
             echo json_encode(array("status" => "ok"));
         break;
 
-        /* ===== Soporte y Administrador: estadísticas globales ===== */
-        case "total";
-            requiere_rol(ROLES_SOPORTE);
-            $datos=$ticket->get_ticket_total();
-            echo json_encode(array("TOTAL" => $datos[0]["TOTAL"] ?? 0));
-        break;
-
-        case "totalabierto";
-            requiere_rol(ROLES_SOPORTE);
-            $datos=$ticket->get_ticket_totalabierto();
-            echo json_encode(array("TOTAL" => $datos[0]["TOTAL"] ?? 0));
-        break;
-
-        case "totalcerrado";
-            requiere_rol(ROLES_SOPORTE);
-            $datos=$ticket->get_ticket_totalcerrado();
-            echo json_encode(array("TOTAL" => $datos[0]["TOTAL"] ?? 0));
-        break;
-
-        case "grafico";
-            requiere_rol(ROLES_SOPORTE);
-            $datos=$ticket->get_ticket_grafico();
-            echo json_encode($datos);
-        break;
-
         default:
             auth_denegar(404, "ajax", "Operación no válida.");
     }

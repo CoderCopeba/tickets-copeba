@@ -5,15 +5,6 @@
     /* Animación de bienvenida solo justo después de iniciar sesión */
     $bienvenida = !empty($_SESSION["bienvenida"]);
     unset($_SESSION["bienvenida"]);
-    $ico = array(
-        "ticket" => '<path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/>',
-        "abierto" => '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 2v4M16 2v4M4 10h16"/><circle cx="15" cy="15" r="2"/>',
-        "cerrado" => '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
-        "cola"    => '<path d="M4 6h16M4 12h10M4 18h6"/>',
-    );
-    function icono_kpi($svg){
-        return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'.$svg.'</svg>';
-    }
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -33,7 +24,7 @@
                     <h1>Inicio</h1>
                 </div>
                 <a href="../NuevoTicket/" class="cp-btn cp-btn-primario">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    <?php echo icono("mas", 14, 2.6); ?>
                     Nuevo ticket
                 </a>
             </header>
@@ -81,7 +72,7 @@
                 <article class="cp-tarjeta cp-kpi">
                     <div class="cp-kpi-cab">
                         <span><?php echo e($k[1]); ?></span>
-                        <span class="cp-kpi-ico <?php echo e($k[4]); ?>"><?php echo icono_kpi($ico[$k[3]]); ?></span>
+                        <span class="cp-kpi-ico <?php echo e($k[4]); ?>"><?php echo icono($k[3], 16, 2); ?></span>
                     </div>
                     <div class="cp-kpi-pie">
                         <span class="cp-kpi-num" data-kpi="<?php echo e($k[0]); ?>">–</span>

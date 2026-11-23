@@ -98,6 +98,11 @@ quieras conservar). Si no hay script, pregunta al equipo antes de reimportar.
 
 ## Convenciones
 
+- **Reutiliza antes de escribir.** JavaScript: `public/js/copeba.js` (`Copeba.exito`, `aviso`,
+  `error`, `confirmar`, `enviar`, `leer`, `tabla`, `editor`, `param`, `folio`, `fecha`).
+  Iconos PHP: `icono("nombre")` de `config/iconos.php`. Estilos comunes: `public/css/copeba-app.css`.
+  Si algo se repite en dos pantallas, conviértelo en recurso compartido.
+
 - Español en código, comentarios, mensajes y commits.
 - Autorización siempre en el servidor (`requiere_sesion`, `requiere_rol`,
   `requiere_acceso_ticket`); ocultar botones en la vista no basta.
