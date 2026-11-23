@@ -1,79 +1,161 @@
 <?php
-  require_once("../../config/conexion.php"); 
-  requiere_sesion("vista"); /* Fase 3: comprobación en el servidor */
-  if(isset($_SESSION["usu_id"])){ 
+    require_once("../../config/conexion.php");
+    requiere_sesion("vista");
+    $rol = rol_actual();
+    $ico = array(
+        "ticket" => '<path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/>',
+        "abierto" => '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 2v4M16 2v4M4 10h16"/><circle cx="15" cy="15" r="2"/>',
+        "cerrado" => '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+        "cola"    => '<path d="M4 6h16M4 12h10M4 18h6"/>',
+    );
+    function icono_kpi($svg){
+        return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'.$svg.'</svg>';
+    }
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="es">
     <?php require_once("../MainHead/head.php");?>
-	<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css">
-	<title>Copeba · Inicio</title>
+    <title>Copeba · Inicio</title>
 </head>
 <body class="with-side-menu">
-
     <?php require_once("../MainHeader/header.php");?>
-
-    <div class="mobile-menu-left-overlay"></div>
-    
     <?php require_once("../MainNav/nav.php");?>
 
-	<!-- Contenido -->
-	<div class="page-content">
-		<div class="container-fluid">
-			<div class="row">
-				<div class="col-xl-12">
-					<div class="row">
-						<div class="col-sm-4">
-	                        <article class="statistic-box green">
-	                            <div>
-	                                <div class="number" id="lbltotal"></div>
-	                                <div class="caption"><div>Total de Tickets</div></div>
-	                            </div>
-	                        </article>
-	                    </div>
-						<div class="col-sm-4">
-	                        <article class="statistic-box yellow">
-	                            <div>
-	                                <div class="number" id="lbltotalabierto"></div>
-	                                <div class="caption"><div>Total de Tickets Abiertos</div></div>
-	                            </div>
-	                        </article>
-	                    </div>
-						<div class="col-sm-4">
-	                        <article class="statistic-box red">
-	                            <div>
-	                                <div class="number" id="lbltotalcerrado"></div>
-	                                <div class="caption"><div>Total de Tickets Cerrados</div></div>
-	                            </div>
-	                        </article>
-	                    </div>
-					</div>
-				</div>
-			</div>
+    <div class="page-content">
+        <div class="container-fluid">
 
-			<section class="card">
-				<header class="card-header">
-					Grafico Estadístico
-				</header>
-				<div class="card-block">
-					<div id="divgrafico" style="height: 250px;"></div>
-				</div>
-			</section>
-			
-		</div>
-	</div>
-	<!-- Contenido -->
+            <header class="cp-encabezado">
+                <div>
+                    <small>Sistema Interno · Cooperativa Copeba, R.L.</small>
+                    <h1>Inicio</h1>
+                </div>
+                <a href="../NuevoTicket/" class="cp-btn cp-btn-primario">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Nuevo ticket
+                </a>
+            </header>
 
-	<?php require_once("../MainJs/js.php");?>
+            <?php if ($rol === ROL_USUARIO) { ?>
+            <section class="cp-tarjeta cp-bienvenida">
+                <div>
+                    <h2>Hola, <?php echo e($_SESSION["usu_nom"] ?? ""); ?></h2>
+                    <p>¿Tienes un problema con tu equipo o necesitas un servicio? Repórtalo y te atendemos.</p>
+                </div>
+                <a href="../NuevoTicket/" class="cp-btn">Reportar un problema</a>
+            </section>
+            <?php } ?>
 
-	<script src="//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js"></script>
-	<script src="//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
-	<script type="text/javascript" src="home.js"></script>
+            <div class="cp-seccion-titulo">
+                <h2><?php echo $rol === ROL_ADMIN ? "Resumen operativo" : ($rol === ROL_SOPORTE ? "Mi trabajo" : "Mis tickets"); ?></h2>
+                <span class="cp-fecha" id="lbl_actualizado"></span>
+            </div>
 
+            <!-- Indicadores: el texto y los valores dependen del rol -->
+            <section class="cp-kpis cp-cargando" id="kpis">
+                <?php
+                if ($rol === ROL_ADMIN) {
+                    $kpis = array(
+                        array("total", "Total de tickets", "Histórico", "ticket", ""),
+                        array("abiertos", "Tickets abiertos", "En atención", "abierto", "azul"),
+                        array("cerrados", "Tickets cerrados", "", "cerrado", "gris"),
+                        array("sin_asignar", "Sin asignar", "Esperan agente", "cola", "ambar"),
+                    );
+                } elseif ($rol === ROL_SOPORTE) {
+                    $kpis = array(
+                        array("mis_abiertos", "Asignados a mí", "Abiertos", "abierto", "azul"),
+                        array("sin_asignar", "Sin asignar", "Esperan agente", "cola", "ambar"),
+                        array("mis_cerrados", "Cerrados por mí", "Histórico", "cerrado", "gris"),
+                        array("abiertos", "Abiertos en total", "Toda la mesa", "ticket", ""),
+                    );
+                } else {
+                    $kpis = array(
+                        array("total", "Mis tickets", "Histórico", "ticket", ""),
+                        array("abiertos", "Abiertos", "En atención", "abierto", "azul"),
+                        array("cerrados", "Cerrados", "Resueltos", "cerrado", "gris"),
+                    );
+                }
+                foreach ($kpis as $k) { ?>
+                <article class="cp-tarjeta cp-kpi">
+                    <div class="cp-kpi-cab">
+                        <span><?php echo e($k[1]); ?></span>
+                        <span class="cp-kpi-ico <?php echo e($k[4]); ?>"><?php echo icono_kpi($ico[$k[3]]); ?></span>
+                    </div>
+                    <div class="cp-kpi-pie">
+                        <span class="cp-kpi-num" data-kpi="<?php echo e($k[0]); ?>">–</span>
+                        <span class="cp-kpi-nota" data-nota="<?php echo e($k[0]); ?>"><?php echo e($k[2]); ?></span>
+                    </div>
+                </article>
+                <?php } ?>
+            </section>
+
+            <?php if ($rol === ROL_ADMIN) { ?>
+            <!-- Inventario: se añadirá una segunda columna cuando exista el módulo -->
+            <div class="cp-rejilla">
+                <section class="cp-tarjeta cp-panel">
+                    <div class="cp-seccion-titulo">
+                        <div>
+                            <h2>Tickets por categoría</h2>
+                            <p>Distribución histórica de solicitudes registradas</p>
+                        </div>
+                        <span class="cp-chip" id="lbl_registros"></span>
+                    </div>
+                    <div class="cp-barras" id="barras"></div>
+                    <div class="cp-panel-pie">
+                        <span id="lbl_mayor"></span>
+                        <a class="cp-enlace" href="../ConsultarTicket/">Ver tickets</a>
+                    </div>
+                </section>
+            </div>
+            <?php } ?>
+
+            <?php
+            /* Tablas según el rol: [id, título, descripción] */
+            if ($rol === ROL_ADMIN) {
+                $tablas = array(array("recientes", "Tickets recientes", "Últimas solicitudes ingresadas a la mesa de ayuda"));
+            } elseif ($rol === ROL_SOPORTE) {
+                $tablas = array(
+                    array("asignados", "Asignados a mí", "Tickets abiertos que te corresponden, del más antiguo al más reciente"),
+                    array("sin_asignar", "Sin asignar", "Solicitudes que todavía no tienen agente"),
+                );
+            } else {
+                $tablas = array(array("recientes", "Mis solicitudes", "Estado de los tickets que has reportado"));
+            }
+            foreach ($tablas as $t) { ?>
+            <section class="cp-rejilla">
+                <div>
+                    <div class="cp-seccion-titulo">
+                        <div>
+                            <h2><?php echo e($t[1]); ?></h2>
+                            <p><?php echo e($t[2]); ?></p>
+                        </div>
+                        <a href="../ConsultarTicket/" class="cp-btn cp-btn-borde">Ver todos</a>
+                    </div>
+                    <div class="cp-tarjeta cp-tabla-caja">
+                        <table class="cp-tabla">
+                            <thead>
+                                <tr>
+                                    <th>Folio</th>
+                                    <th>Título</th>
+                                    <th>Categoría</th>
+                                    <th>Estado</th>
+                                    <th>Soporte</th>
+                                    <th>Fecha</th>
+                                    <th>Detalle</th>
+                                </tr>
+                            </thead>
+                            <tbody data-tabla="<?php echo e($t[0]); ?>">
+                                <tr><td colspan="7" class="cp-vacio">Cargando…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            <?php } ?>
+
+        </div>
+    </div>
+
+    <?php require_once("../MainJs/js.php");?>
+    <script src="home.js?v=<?php echo filemtime(__DIR__."/home.js"); ?>"></script>
 </body>
 </html>
-<?php
-  } else {
-    header("Location:".Conectar::ruta()."index.php");
-  }
-?>

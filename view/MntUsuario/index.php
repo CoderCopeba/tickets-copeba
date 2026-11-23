@@ -25,7 +25,7 @@
 						<div class="tbl-cell">
 							<h3>Mantenimiento Usuario</h3>
 							<ol class="breadcrumb breadcrumb-simple">
-								<li><a href="#">Home</a></li>
+								<li><a href="../Home/">Inicio</a></li>
 								<li class="active">Mantenimiento Usuario</li>
 							</ol>
 						</div>

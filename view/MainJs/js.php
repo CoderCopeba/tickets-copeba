@@ -21,3 +21,18 @@ $.ajaxSetup({ headers: { "X-CSRF-Token": $('meta[name="csrf-token"]').attr("cont
 <script src="../../public/js/lib/summernote/summernote-es-ES.min.js"></script>
 
 <script src="../../public/js/lib/select2/select2.full.min.js"></script>
+<script>
+/* Menú lateral en celular: abrir / cerrar */
+(function () {
+    var btn = document.getElementById('cp_btn_menu');
+    var fondo = document.getElementById('cp_side_fondo');
+    if (!btn) { return; }
+    function cerrar() { document.body.classList.remove('cp-menu-abierto'); btn.setAttribute('aria-expanded', 'false'); }
+    btn.addEventListener('click', function () {
+        var abierto = document.body.classList.toggle('cp-menu-abierto');
+        btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+    });
+    if (fondo) { fondo.addEventListener('click', cerrar); }
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cerrar(); } });
+})();
+</script>
