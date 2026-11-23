@@ -156,7 +156,8 @@
             $sql->bindValue(1, $tick_id);
             $sql->bindValue(2, $usu_id);
             $sql->execute();
-            return $resultado=$sql->fetchAll();
+            $sql->closeCursor();
+            return array();
         }
 
         public function insert_ticketdetalle_reabrir($tick_id,$usu_id){

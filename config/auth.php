@@ -82,6 +82,10 @@ function requiere_sesion($modo = "ajax"){
     if (usuario_actual_id() === null || rol_actual() === null){
         auth_denegar(401, $modo);
     }
+    /* Toda petición AJAX por POST debe traer el token CSRF de la sesión */
+    if ($modo === "ajax" && es_post() && !csrf_valido()){
+        auth_denegar(403, $modo, "La sesión caducó o la petición no es válida. Recarga la página.");
+    }
 }
 
 function requiere_rol(array $roles, $modo = "ajax"){

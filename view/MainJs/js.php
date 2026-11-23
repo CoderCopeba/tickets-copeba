@@ -1,4 +1,8 @@
 <script src="../../public/js/lib/jquery/jquery.min.js"></script>
+<script>
+/* Envía el token CSRF en todas las peticiones AJAX (el servidor lo exige en los POST) */
+$.ajaxSetup({ headers: { "X-CSRF-Token": $('meta[name="csrf-token"]').attr("content") } });
+</script>
 <script src="../../public/js/lib/tether/tether.min.js"></script>
 <script src="../../public/js/lib/bootstrap/bootstrap.min.js"></script>
 <script src="../../public/js/plugins.js"></script>
