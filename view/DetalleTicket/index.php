@@ -1,11 +1,15 @@
 <?php
 require_once("../../config/conexion.php");
+require_once("../../models/Ticket.php");
+requiere_sesion("vista");
+/* Fase 3: un Usuario (rol 1) solo puede abrir SUS tickets; si no, 403 */
+requiere_acceso_ticket(new Ticket(), $_GET["ID"] ?? 0, "vista");
 if (isset($_SESSION["usu_id"])) {
 ?>
   <!DOCTYPE html>
   <html>
   <?php require_once("../MainHead/head.php"); ?>
-  <title>AnderCode</>::Detalle Ticket</title>
+  <title>Copeba · Detalle Ticket</title>
   </head>
 
   <body class="with-side-menu">

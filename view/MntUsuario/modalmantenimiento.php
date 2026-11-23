@@ -34,7 +34,8 @@
 
                     <div class="form-group">
                         <label class="form-label" for="usu_pass">Contraseña</label>
-                        <input type="text" class="form-control" id="usu_pass" name="usu_pass" placeholder="************" required>
+                        <input type="password" class="form-control" id="usu_pass" name="usu_pass" placeholder="Dejar vacío para no cambiar" autocomplete="new-password">
+                        <small class="text-muted" id="usu_pass_ayuda">Obligatoria para un usuario nuevo. Al editar, dejar vacío para no cambiar.</small>
                     </div>
 
                     <div class="form-group">
@@ -42,6 +43,7 @@
                         <select class="select2" id="rol_id" name="rol_id">
                             <option value="1">Usuario</option>
                             <option value="2">Soporte</option>
+                            <option value="3">Administrador</option>
                         </select>
                     </div>
 

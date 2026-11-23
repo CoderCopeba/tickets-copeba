@@ -10,6 +10,17 @@
             $sql->execute();
         }
 
+        /* Un documento por su id, o null */
+        public function get_documento_x_id($doc_id){
+            $conectar= parent::conexion();
+            $sql="SELECT doc_id, tick_id, doc_nom FROM td_documento WHERE doc_id=? AND est=1";
+            $sql = $conectar->prepare($sql);
+            $sql->bindValue(1, (int)$doc_id, PDO::PARAM_INT);
+            $sql->execute();
+            $fila = $sql->fetch(PDO::FETCH_ASSOC);
+            return is_array($fila) ? $fila : null;
+        }
+
         public function get_documento_x_ticket($tick_id){
             $conectar= parent::conexion();
             /* consulta sql */

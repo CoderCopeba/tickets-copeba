@@ -1,22 +1,36 @@
 <?php
     /* llamada a las clases necesarias */
     require_once("../config/conexion.php");
-    require_once("../models/Email.php");
+
+    /* Permisos ANTES de instanciar nada */
+    requiere_sesion("ajax");
+
+    require_once("../models/Email.php");   /* carga también models/Ticket.php */
+    $ticket = new Ticket();
     $email = new Email();
 
     /* opciones del controlador */
-    switch ($_GET["op"]) {
-        /*  enviar ticket abierto con el ID */
+    switch ($_GET["op"] ?? "") {
+        /* Aviso de ticket creado: propietario o Soporte/Admin */
         case "ticket_abierto":
-            $email->ticket_abierto($_POST["tick_id"]);
+            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
+            $email->ticket_abierto($tick_id);
             break;
 
+        /* Aviso de ticket cerrado: propietario o Soporte/Admin (los mismos que pueden cerrarlo) */
         case "ticket_cerrado":
-            $email->ticket_cerrado($_POST["tick_id"]);
+            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
+            $email->ticket_cerrado($tick_id);
             break;
 
+        /* Aviso de asignación: solo Soporte/Admin */
         case "ticket_asignado":
-            $email->ticket_asignado($_POST["tick_id"]);
+            requiere_rol(ROLES_SOPORTE);
+            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
+            $email->ticket_asignado($tick_id);
             break;
+
+        default:
+            auth_denegar(404, "ajax", "Operación no válida.");
     }
 ?>

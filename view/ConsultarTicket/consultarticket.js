@@ -10,9 +10,12 @@ function init(){
 
 $(document).ready(function(){
 
-    $.post("../../controller/usuario.php?op=combo", function (data) {
-        $('#usu_asig').html(data);
-    });
+    /* Solo Soporte/Admin tienen el modal de asignar (el servidor también lo exige) */
+    if (rol_id != 1){
+        $.post("../../controller/usuario.php?op=combo", function (data) {
+            $('#usu_asig').html(data);
+        });
+    }
 
     if (rol_id==1){
         tabla=$('#ticket_data').dataTable({
@@ -32,7 +35,7 @@ $(document).ready(function(){
                 url: '../../controller/ticket.php?op=listar_x_usu',
                 type : "post",
                 dataType : "json",	
-                data:{ usu_id : usu_id },						
+                /* el servidor usa el usuario de la sesión */
                 error: function(e){
                     console.log(e.responseText);	
                 }
@@ -149,6 +152,12 @@ function guardar(e){
         contentType: false,
         processData: false,
         success: function(datos){
+            var resp;
+            try { resp = JSON.parse(datos); } catch (err) { resp = null; }
+            if (!resp || resp.status !== "ok"){
+                swal("Advertencia!", (resp && resp.message) ? resp.message : "No se pudo asignar.", "warning");
+                return;
+            }
             var tick_id = $('#tick_id').val();
             $.post("../../controller/email.php?op=ticket_asignado", {tick_id : tick_id}, function (data) {
 
@@ -164,7 +173,7 @@ function guardar(e){
 
 function CambiarEstado(tick_id){
     swal({
-        title: "HelpDesk",
+        title: "Copeba Tickets",
         text: "Esta seguro de Reabrir el Ticket?",
         type: "warning",
         showCancelButton: true,
@@ -175,17 +184,18 @@ function CambiarEstado(tick_id){
     },
     function(isConfirm) {
         if (isConfirm) {
-            $.post("../../controller/ticket.php?op=reabrir", {tick_id : tick_id,usu_id : usu_id}, function (data) {
-
-            });
-
-            $('#ticket_data').DataTable().ajax.reload();	
-
-            swal({
-                title: "HelpDesk!",
-                text: "Ticket Abierto.",
-                type: "success",
-                confirmButtonClass: "btn-success"
+            $.post("../../controller/ticket.php?op=reabrir", {tick_id : tick_id}, function (data) {
+                $('#ticket_data').DataTable().ajax.reload();
+                swal({
+                    title: "Copeba Tickets",
+                    text: "Ticket Abierto.",
+                    type: "success",
+                    confirmButtonClass: "btn-success"
+                });
+            }).fail(function(xhr){
+                var resp;
+                try { resp = JSON.parse(xhr.responseText); } catch (err) { resp = null; }
+                swal("Advertencia!", (resp && resp.message) ? resp.message : "No se pudo reabrir.", "warning");
             });
         }
     });

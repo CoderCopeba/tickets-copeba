@@ -18,6 +18,18 @@
             return $resultado=$sql1->fetchAll(pdo::FETCH_ASSOC);
         }
 
+        /* usu_id del creador del ticket, o null si no existe */
+        public function get_ticket_propietario($tick_id){
+            $conectar= parent::conexion();
+            parent::set_names();
+            $sql="SELECT usu_id FROM tm_ticket WHERE tick_id = ? AND est = 1";
+            $sql=$conectar->prepare($sql);
+            $sql->bindValue(1, (int)$tick_id, PDO::PARAM_INT);
+            $sql->execute();
+            $usu_id = $sql->fetchColumn();
+            return ($usu_id === false) ? null : (int)$usu_id;
+        }
+
         public function listar_ticket_x_usu($usu_id){
             $conectar= parent::conexion();
             parent::set_names();

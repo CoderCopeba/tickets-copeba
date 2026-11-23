@@ -1,63 +1,22 @@
 <?php
-    if ($_SESSION["rol_id"]==1){
-        ?>
-            <nav class="side-menu">
-                <ul class="side-menu-list">
-                    <li class="blue-dirty">
-                        <a href="..\Home\">
-                            <span class="glyphicon glyphicon-th"></span>
-                            <span class="lbl">Inicio</span>
-                        </a>
-                    </li>
-
-                    <li class="blue-dirty">
-                        <a href="..\NuevoTicket\">
-                            <span class="glyphicon glyphicon-th"></span>
-                            <span class="lbl">Nuevo Ticket</span>
-                        </a>
-                    </li>
-
-                    <li class="blue-dirty">
-                        <a href="..\ConsultarTicket\">
-                            <span class="glyphicon glyphicon-th"></span>
-                            <span class="lbl">Consultar Ticket</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        <?php
-    }else{
-        ?>
-            <nav class="side-menu">
-                <ul class="side-menu-list">
-                    <li class="blue-dirty">
-                        <a href="..\Home\">
-                            <span class="glyphicon glyphicon-th"></span>
-                            <span class="lbl">Inicio</span>
-                        </a>
-                    </li>
-
-                    <li class="blue-dirty">
-                        <a href="..\NuevoTicket\">
-                            <span class="glyphicon glyphicon-th"></span>
-                            <span class="lbl">Nuevo Ticket</span>
-                        </a>
-                    </li>
-
-                    <li class="blue-dirty">
-                        <a href="..\MntUsuario\">
-                            <span class="glyphicon glyphicon-th"></span>
-                            <span class="lbl">Mantenimiento Usuario</span>
-                        </a>
-                    </li>
-                    <li class="blue-dirty">
-                        <a href="..\ConsultarTicket\">
-                            <span class="glyphicon glyphicon-th"></span>
-                            <span class="lbl">Consultar Ticket</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        <?php
-    }
+    /* Menú lateral según el rol (Fase 3). Ocultar opciones es solo comodidad:
+       cada vista y cada controlador comprueban el permiso en el servidor. */
+    $menu = array(
+        array("url" => "../Home/",            "texto" => "Inicio",                "roles" => ROLES_VALIDOS),
+        array("url" => "../NuevoTicket/",     "texto" => "Nuevo Ticket",          "roles" => ROLES_VALIDOS),
+        array("url" => "../ConsultarTicket/", "texto" => "Consultar Ticket",      "roles" => ROLES_VALIDOS),
+        array("url" => "../MntUsuario/",      "texto" => "Mantenimiento Usuario", "roles" => array(ROL_ADMIN)),
+    );
 ?>
+<nav class="side-menu">
+    <ul class="side-menu-list">
+        <?php foreach ($menu as $opcion) { if (in_array(rol_actual(), $opcion["roles"], true)) { ?>
+        <li class="blue-dirty">
+            <a href="<?php echo e($opcion["url"]); ?>">
+                <span class="glyphicon glyphicon-th"></span>
+                <span class="lbl"><?php echo e($opcion["texto"]); ?></span>
+            </a>
+        </li>
+        <?php } } ?>
+    </ul>
+</nav>

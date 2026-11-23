@@ -1,11 +1,12 @@
 <?php
   require_once("../../config/conexion.php"); 
+  requiere_sesion("vista"); /* Fase 3: comprobación en el servidor */
   if(isset($_SESSION["usu_id"])){ 
 ?>
 <!DOCTYPE html>
 <html>
     <?php require_once("../MainHead/head.php");?>
-	<title>AnderCode</>::Consultar Ticket</title>
+	<title>Copeba · Consultar Ticket</title>
 </head>
 <body class="with-side-menu">
 
@@ -56,7 +57,7 @@
 		</div>
 	</div>
 	<!-- Contenido -->
-	<?php require_once("modalasignar.php");?>
+	<?php if (es_soporte()) { require_once("modalasignar.php"); } /* asignar: solo Soporte/Admin */ ?>
 
 	<?php require_once("../MainJs/js.php");?>
 

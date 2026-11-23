@@ -3,34 +3,62 @@
     require_once("../models/Usuario.php");
     $usuario = new Usuario();
 
-    switch($_GET["op"]){
+    /* Ninguna operación de este controlador es pública */
+    requiere_sesion("ajax");
+
+    function json_error($mensaje){
+        echo json_encode(array("status" => "error", "message" => $mensaje));
+    }
+
+    $op = $_GET["op"] ?? "";
+
+    switch($op){
+        /* ===== Solo Administrador ===== */
         case "guardaryeditar":
-            $usu_id      = $_POST["usu_id"] ?? "";
+            requiere_rol(array(ROL_ADMIN));
+
+            $usu_id      = (string)($_POST["usu_id"] ?? "");
             $usu_usuario = Usuario::normalizar_usuario($_POST["usu_usuario"] ?? "");
+            $usu_pass    = (string)($_POST["usu_pass"] ?? "");
+            $rol_id      = (int)($_POST["rol_id"] ?? 0);
+            $es_alta     = ($usu_id === "");
 
             if (!Usuario::usuario_valido($usu_usuario)){
-                echo json_encode(array("status" => "error", "message" => "Nombre de usuario no válido. Use de 3 a 30 caracteres: letras sin acentos (a-z), números, punto (.), guion (-) o guion bajo (_)."));
+                json_error("Nombre de usuario no válido. Use de 3 a 30 caracteres: letras sin acentos (a-z), números, punto (.), guion (-) o guion bajo (_).");
                 break;
             }
-            if ($usuario->existe_usuario($usu_usuario, $usu_id)){
-                echo json_encode(array("status" => "error", "message" => "El nombre de usuario \"".$usu_usuario."\" ya está en uso. Elija otro."));
+            if (!in_array($rol_id, ROLES_VALIDOS, true)){
+                json_error("Rol no válido.");
+                break;
+            }
+            if ($es_alta && $usu_pass === ""){
+                json_error("La contraseña es obligatoria para un usuario nuevo.");
+                break;
+            }
+            if (!$es_alta && (int)$usu_id === usuario_actual_id() && $rol_id !== ROL_ADMIN){
+                json_error("No puede quitarse a sí mismo el rol de Administrador.");
+                break;
+            }
+            if ($usuario->existe_usuario($usu_usuario, $es_alta ? null : $usu_id)){
+                json_error("El nombre de usuario \"".$usu_usuario."\" ya está en uso. Elija otro.");
                 break;
             }
 
             try {
-                if(empty($usu_id)){
-                    $usuario->insert_usuario($_POST["usu_nom"] ?? "",$_POST["usu_ape"] ?? "",$usu_usuario,$_POST["usu_correo"] ?? "",$_POST["usu_pass"] ?? "",$_POST["rol_id"] ?? 1);
+                if($es_alta){
+                    $usuario->insert_usuario($_POST["usu_nom"] ?? "",$_POST["usu_ape"] ?? "",$usu_usuario,$_POST["usu_correo"] ?? "",$usu_pass,$rol_id);
                 }
                 else {
-                    $usuario->update_usuario($usu_id,$_POST["usu_nom"] ?? "",$_POST["usu_ape"] ?? "",$usu_usuario,$_POST["usu_correo"] ?? "",$_POST["usu_pass"] ?? "",$_POST["rol_id"] ?? 1);
+                    /* contraseña vacía = no cambiarla */
+                    $usuario->update_usuario((int)$usu_id,$_POST["usu_nom"] ?? "",$_POST["usu_ape"] ?? "",$usu_usuario,$_POST["usu_correo"] ?? "",$usu_pass,$rol_id);
                 }
             } catch (PDOException $e) {
                 /* 23000 = violación de índice único (dos altas simultáneas con el mismo usuario) */
                 if ($e->getCode() == 23000){
-                    echo json_encode(array("status" => "error", "message" => "El nombre de usuario \"".$usu_usuario."\" ya está en uso. Elija otro."));
+                    json_error("El nombre de usuario \"".$usu_usuario."\" ya está en uso. Elija otro.");
                 } else {
                     error_log("Error al guardar usuario: ".$e->getMessage());
-                    echo json_encode(array("status" => "error", "message" => "No se pudo guardar el usuario."));
+                    json_error("No se pudo guardar el usuario.");
                 }
                 break;
             }
@@ -38,24 +66,26 @@
             break;
 
         case "listar":
+            requiere_rol(array(ROL_ADMIN));
             $datos=$usuario->get_usuario();
             $data= Array();
             foreach($datos as $row){
                 $sub_array = array();
-                $sub_array[] = $row["usu_nom"];
-                $sub_array[] = $row["usu_ape"];
-                $sub_array[] = htmlspecialchars((string)($row["usu_usuario"] ?? ""), ENT_QUOTES, "UTF-8");
-                $sub_array[] = $row["usu_correo"];
-                $sub_array[] = $row["usu_pass"];
+                $sub_array[] = e($row["usu_nom"]);
+                $sub_array[] = e($row["usu_ape"]);
+                $sub_array[] = e($row["usu_usuario"] ?? "");
+                $sub_array[] = e($row["usu_correo"]);
 
-                if ($row["rol_id"]=="1"){
-                    $sub_array[] = '<span class="label label-pill label-success">Usuario</span>';
-                }else{
-                    $sub_array[] = '<span class="label label-pill label-info">Soporte</span>';
+                switch ((int)$row["rol_id"]){
+                    case ROL_USUARIO: $sub_array[] = '<span class="label label-pill label-success">Usuario</span>'; break;
+                    case ROL_SOPORTE: $sub_array[] = '<span class="label label-pill label-info">Soporte</span>'; break;
+                    case ROL_ADMIN:   $sub_array[] = '<span class="label label-pill label-danger">Administrador</span>'; break;
+                    default:          $sub_array[] = '<span class="label label-pill label-default">Desconocido</span>';
                 }
 
-                $sub_array[] = '<button type="button" onClick="editar('.$row["usu_id"].');"  id="'.$row["usu_id"].'" class="btn btn-inline btn-warning btn-sm ladda-button"><i class="fa fa-edit"></i></button>';
-                $sub_array[] = '<button type="button" onClick="eliminar('.$row["usu_id"].');"  id="'.$row["usu_id"].'" class="btn btn-inline btn-danger btn-sm ladda-button"><i class="fa fa-trash"></i></button>';
+                $id = (int)$row["usu_id"];
+                $sub_array[] = '<button type="button" onClick="editar('.$id.');"  id="'.$id.'" class="btn btn-inline btn-warning btn-sm ladda-button"><i class="fa fa-edit"></i></button>';
+                $sub_array[] = '<button type="button" onClick="eliminar('.$id.');"  id="'.$id.'" class="btn btn-inline btn-danger btn-sm ladda-button"><i class="fa fa-trash"></i></button>';
                 $data[] = $sub_array;
             }
 
@@ -68,80 +98,87 @@
             break;
 
         case "eliminar":
-            $usuario->delete_usuario($_POST["usu_id"]);
+            requiere_rol(array(ROL_ADMIN));
+            $usu_id = (int)($_POST["usu_id"] ?? 0);
+            if ($usu_id === usuario_actual_id()){
+                json_error("No puede eliminar su propia cuenta.");
+                break;
+            }
+            $usuario->delete_usuario($usu_id);
+            echo json_encode(array("status" => "ok"));
             break;
 
         case "mostrar";
-            $datos=$usuario->get_usuario_x_id($_POST["usu_id"]);  
+            requiere_rol(array(ROL_ADMIN));
+            $datos=$usuario->get_usuario_x_id((int)($_POST["usu_id"] ?? 0));
             if(is_array($datos)==true and count($datos)>0){
+                $output = array();
                 foreach($datos as $row)
                 {
+                    /* usu_pass NUNCA se devuelve */
                     $output["usu_id"] = $row["usu_id"];
                     $output["usu_nom"] = $row["usu_nom"];
                     $output["usu_ape"] = $row["usu_ape"];
                     $output["usu_usuario"] = $row["usu_usuario"] ?? "";
                     $output["usu_correo"] = $row["usu_correo"];
-                    $output["usu_pass"] = $row["usu_pass"];
                     $output["rol_id"] = $row["rol_id"];
                 }
                 echo json_encode($output);
-            }   
+            }
             break;
 
+        /* ===== Cualquier usuario con sesión, siempre sobre SU PROPIO id ===== */
         case "total";
-            $datos=$usuario->get_usuario_total_x_id($_POST["usu_id"]);  
-            if(is_array($datos)==true and count($datos)>0){
-                foreach($datos as $row)
-                {
-                    $output["TOTAL"] = $row["TOTAL"];
-                }
-                echo json_encode($output);
-            }
+            $datos=$usuario->get_usuario_total_x_id(usuario_actual_id());
+            echo json_encode(array("TOTAL" => $datos[0]["TOTAL"] ?? 0));
             break;
 
         case "totalabierto";
-            $datos=$usuario->get_usuario_totalabierto_x_id($_POST["usu_id"]);  
-            if(is_array($datos)==true and count($datos)>0){
-                foreach($datos as $row)
-                {
-                    $output["TOTAL"] = $row["TOTAL"];
-                }
-                echo json_encode($output);
-            }
+            $datos=$usuario->get_usuario_totalabierto_x_id(usuario_actual_id());
+            echo json_encode(array("TOTAL" => $datos[0]["TOTAL"] ?? 0));
             break;
 
         case "totalcerrado";
-            $datos=$usuario->get_usuario_totalcerrado_x_id($_POST["usu_id"]);  
-            if(is_array($datos)==true and count($datos)>0){
-                foreach($datos as $row)
-                {
-                    $output["TOTAL"] = $row["TOTAL"];
-                }
-                echo json_encode($output);
-            }
+            $datos=$usuario->get_usuario_totalcerrado_x_id(usuario_actual_id());
+            echo json_encode(array("TOTAL" => $datos[0]["TOTAL"] ?? 0));
             break;
 
         case "grafico";
-            $datos=$usuario->get_usuario_grafico($_POST["usu_id"]);  
+            $datos=$usuario->get_usuario_grafico(usuario_actual_id());
             echo json_encode($datos);
             break;
 
+        /* ===== Soporte y Administrador: combo de agentes para asignar ===== */
         case "combo";
+            requiere_rol(ROLES_SOPORTE);
             $datos = $usuario->get_usuario_x_rol();
             $html = "";
             if(is_array($datos)==true and count($datos)>0){
                 $html.= "<option label='Seleccionar'></option>";
                 foreach($datos as $row)
                 {
-                    $html.= "<option value='".$row['usu_id']."'>".$row['usu_nom']."</option>";
+                    $html.= "<option value='".(int)$row['usu_id']."'>".e($row['usu_nom'])."</option>";
                 }
-                echo $html;
             }
-            break;
-        /* Controller para actualizar contraseña */
-        case "password":
-            $usuario->update_usuario_pass($_POST["usu_id"],$_POST["usu_pass"]);
+            echo $html;
             break;
 
+        /* ===== Cambio de contraseña propia (perfil): exige la actual ===== */
+        case "password":
+            $actual = (string)($_POST["usu_pass_actual"] ?? "");
+            $nueva  = (string)($_POST["usu_pass"] ?? "");
+            if ($actual === "" || $nueva === ""){
+                json_error("Complete la contraseña actual y la nueva.");
+                break;
+            }
+            if ($usuario->cambiar_pass(usuario_actual_id(), $actual, $nueva)){
+                echo json_encode(array("status" => "ok"));
+            } else {
+                json_error("La contraseña actual no es correcta.");
+            }
+            break;
+
+        default:
+            auth_denegar(404, "ajax", "Operación no válida.");
     }
 ?>

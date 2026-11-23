@@ -1,11 +1,12 @@
 <?php
   require_once("../../config/conexion.php"); 
+  requiere_rol(array(ROL_ADMIN), "vista"); /* Fase 3: solo Administrador */
   if(isset($_SESSION["usu_id"])){ 
 ?>
 <!DOCTYPE html>
 <html>
     <?php require_once("../MainHead/head.php");?>
-	<title>AnderCode</>::Mantenimiento Usuario</title>
+	<title>Copeba · Mantenimiento Usuario</title>
 </head>
 <body class="with-side-menu">
 
@@ -40,8 +41,7 @@
 							<th style="width: 10%;">Nombre</th>
 							<th style="width: 10%;">Apellido</th>
 							<th style="width: 10%;">Usuario</th>
-							<th class="d-none d-sm-table-cell" style="width: 30%;">Correo</th>
-							<th class="d-none d-sm-table-cell" style="width: 5%;">Contraseña</th>
+							<th class="d-none d-sm-table-cell" style="width: 35%;">Correo</th>
 							<th class="d-none d-sm-table-cell" style="width: 5%;">Rol</th>
 							<th class="text-center" style="width: 5%;"></th>
 							<th class="text-center" style="width: 5%;"></th>

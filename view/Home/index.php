@@ -1,12 +1,13 @@
 <?php
   require_once("../../config/conexion.php"); 
+  requiere_sesion("vista"); /* Fase 3: comprobación en el servidor */
   if(isset($_SESSION["usu_id"])){ 
 ?>
 <!DOCTYPE html>
 <html>
     <?php require_once("../MainHead/head.php");?>
 	<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css">
-	<title>AnderCode</>::Home</title>
+	<title>Copeba · Inicio</title>
 </head>
 <body class="with-side-menu">
 

@@ -1,11 +1,30 @@
--- Esquema de TICKETS-COPEBA (solo estructura, sin datos)
--- Generado: 2026-11-20 desde la base de referencia
--- Importar en una base vacía (utf8mb4). Procedimientos sin DEFINER.
+-- Esquema de TICKETS-COPEBA (solo estructura; sin datos de usuarios ni tickets)
+-- Generado: 2026-11-20 desde la base de referencia (Fase 3)
+-- Importar en una base vacía. Procedimientos con SQL SECURITY INVOKER y sin DEFINER.
+-- Tras importar: crear categorías (tm_categoria) y la primera cuenta Administrador.
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS `tm_usuario`;
+DROP TABLE IF EXISTS `tm_ticket`;
+DROP TABLE IF EXISTS `tm_categoria`;
+DROP TABLE IF EXISTS `td_ticketdetalle`;
 DROP TABLE IF EXISTS `td_documento`;
+DROP TABLE IF EXISTS `tm_rol`;
+
+CREATE TABLE `tm_rol` (
+  `rol_id` int NOT NULL,
+  `rol_nom` varchar(50) COLLATE utf8mb3_spanish_ci NOT NULL,
+  PRIMARY KEY (`rol_id`),
+  UNIQUE KEY `uq_tm_rol_nom` (`rol_nom`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_spanish_ci;
+
+INSERT INTO `tm_rol` (`rol_id`, `rol_nom`) VALUES
+  (1,'Usuario'),
+  (2,'Soporte'),
+  (3,'Administrador');
+
 CREATE TABLE `td_documento` (
   `doc_id` int NOT NULL AUTO_INCREMENT,
   `tick_id` int NOT NULL,
@@ -15,7 +34,6 @@ CREATE TABLE `td_documento` (
   PRIMARY KEY (`doc_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_spanish_ci;
 
-DROP TABLE IF EXISTS `td_ticketdetalle`;
 CREATE TABLE `td_ticketdetalle` (
   `tickd_id` int NOT NULL AUTO_INCREMENT,
   `tick_id` int NOT NULL,
@@ -26,7 +44,6 @@ CREATE TABLE `td_ticketdetalle` (
   PRIMARY KEY (`tickd_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_spanish_ci;
 
-DROP TABLE IF EXISTS `tm_categoria`;
 CREATE TABLE `tm_categoria` (
   `cat_id` int NOT NULL AUTO_INCREMENT,
   `cat_nom` varchar(150) CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci NOT NULL,
@@ -34,7 +51,6 @@ CREATE TABLE `tm_categoria` (
   PRIMARY KEY (`cat_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_spanish_ci;
 
-DROP TABLE IF EXISTS `tm_ticket`;
 CREATE TABLE `tm_ticket` (
   `tick_id` int NOT NULL AUTO_INCREMENT,
   `usu_id` int NOT NULL,
@@ -49,27 +65,29 @@ CREATE TABLE `tm_ticket` (
   PRIMARY KEY (`tick_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_spanish_ci;
 
-DROP TABLE IF EXISTS `tm_usuario`;
 CREATE TABLE `tm_usuario` (
   `usu_id` int NOT NULL AUTO_INCREMENT,
   `usu_nom` varchar(150) CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci DEFAULT NULL,
   `usu_ape` varchar(150) CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci DEFAULT NULL,
   `usu_usuario` varchar(30) COLLATE utf8mb3_spanish_ci NOT NULL,
   `usu_correo` varchar(150) CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci NOT NULL,
-  `usu_pass` varchar(150) CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci NOT NULL,
-  `rol_id` int DEFAULT NULL,
+  `usu_pass` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_spanish_ci NOT NULL,
+  `rol_id` int NOT NULL,
   `fech_crea` datetime DEFAULT NULL,
   `fech_modi` datetime DEFAULT NULL,
   `fech_elim` datetime DEFAULT NULL,
   `est` int NOT NULL,
   PRIMARY KEY (`usu_id`),
-  UNIQUE KEY `uq_tm_usuario_usu_usuario` (`usu_usuario`)
+  UNIQUE KEY `uq_tm_usuario_usu_usuario` (`usu_usuario`),
+  KEY `fk_tm_usuario_rol` (`rol_id`),
+  CONSTRAINT `fk_tm_usuario_rol` FOREIGN KEY (`rol_id`) REFERENCES `tm_rol` (`rol_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_spanish_ci COMMENT='Tabla Mantenedor de Usuarios';
 
 DELIMITER $$
 
 DROP PROCEDURE IF EXISTS `sp_d_usuario_01`$$
 CREATE PROCEDURE `sp_d_usuario_01`(IN `xusu_id` INT)
+    SQL SECURITY INVOKER
 BEGIN
 	UPDATE tm_usuario 
 	SET 
@@ -80,6 +98,7 @@ END$$
 
 DROP PROCEDURE IF EXISTS `sp_i_ticketdetalle_01`$$
 CREATE PROCEDURE `sp_i_ticketdetalle_01`(IN `xtick_id` INT, IN `xusu_id` INT)
+    SQL SECURITY INVOKER
 BEGIN
 	INSERT INTO td_ticketdetalle 
     (tickd_id,tick_id,usu_id,tickd_descrip,fech_crea,est) 
@@ -89,12 +108,14 @@ END$$
 
 DROP PROCEDURE IF EXISTS `sp_l_usuario_01`$$
 CREATE PROCEDURE `sp_l_usuario_01`()
+    SQL SECURITY INVOKER
 BEGIN
 	SELECT * FROM tm_usuario where est='1';
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_l_usuario_02`$$
 CREATE PROCEDURE `sp_l_usuario_02`(IN `xusu_id` INT)
+    SQL SECURITY INVOKER
 BEGIN
 	SELECT * FROM tm_usuario where usu_id=xusu_id;
 END$$

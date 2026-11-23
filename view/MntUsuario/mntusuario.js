@@ -15,6 +15,12 @@ function guardaryeditar(e){
     }
     $('#usu_usuario').val(usu_usuario);
 
+    /* Alta: contraseña obligatoria. Edición: vacía = no cambiarla */
+    if ($('#usu_id').val() === '' && $('#usu_pass').val() === ''){
+        swal("Advertencia!", "La contraseña es obligatoria para un usuario nuevo.", "warning");
+        return;
+    }
+
 	var formData = new FormData($("#usuario_form")[0]);
     $.ajax({
         url: "../../controller/usuario.php?op=guardaryeditar",
@@ -34,7 +40,7 @@ function guardaryeditar(e){
             $('#usuario_data').DataTable().ajax.reload();
 
             swal({
-                title: "HelpDesk!",
+                title: "Copeba Tickets",
                 text: "Completado.",
                 type: "success",
                 confirmButtonClass: "btn-success"
@@ -107,7 +113,7 @@ function editar(usu_id){
         $('#usu_ape').val(data.usu_ape);
         $('#usu_usuario').val(data.usu_usuario);
         $('#usu_correo').val(data.usu_correo);
-        $('#usu_pass').val(data.usu_pass);
+        $('#usu_pass').val('');  /* la contraseña nunca se envía al navegador */
         $('#rol_id').val(data.rol_id).trigger('change');
     }); 
 
@@ -116,7 +122,7 @@ function editar(usu_id){
 
 function eliminar(usu_id){
     swal({
-        title: "HelpDesk",
+        title: "Copeba Tickets",
         text: "Esta seguro de Eliminar el registro?",
         type: "error",
         showCancelButton: true,
@@ -128,16 +134,19 @@ function eliminar(usu_id){
     function(isConfirm) {
         if (isConfirm) {
             $.post("../../controller/usuario.php?op=eliminar", {usu_id : usu_id}, function (data) {
-
-            }); 
-
-            $('#usuario_data').DataTable().ajax.reload();	
-
-            swal({
-                title: "HelpDesk!",
-                text: "Registro Eliminado.",
-                type: "success",
-                confirmButtonClass: "btn-success"
+                var resp;
+                try { resp = JSON.parse(data); } catch (err) { resp = null; }
+                if (!resp || resp.status !== "ok"){
+                    swal("Advertencia!", (resp && resp.message) ? resp.message : "No se pudo eliminar.", "warning");
+                    return;
+                }
+                $('#usuario_data').DataTable().ajax.reload();
+                swal({
+                    title: "Copeba Tickets",
+                    text: "Registro Eliminado.",
+                    type: "success",
+                    confirmButtonClass: "btn-success"
+                });
             });
         }
     });

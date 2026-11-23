@@ -1,11 +1,12 @@
 <?php
   require_once("../../config/conexion.php"); 
+  requiere_sesion("vista"); /* Fase 3: comprobación en el servidor */
   if(isset($_SESSION["usu_id"])){ 
 ?>
 <!DOCTYPE html>
 <html>
     <?php require_once("../MainHead/head.php");?>
-	<title>AnderCode</>::Nuevo Ticket</title>
+	<title>Copeba · Nuevo Ticket</title>
 </head>
 <body class="with-side-menu">
 
@@ -35,7 +36,7 @@
 
 			<div class="box-typical box-typical-padding">
 				<p>
-					Desde esta ventana podra generar nuevos tickets de HelpDesk.
+					Desde esta ventana podra generar nuevos tickets de soporte técnico.
 				</p>
 
 				<h5 class="m-t-lg with-border">Ingresar Información</h5>
@@ -43,7 +44,7 @@
 				<div class="row">
 					<form method="post" id="ticket_form">
 
-						<input type="hidden" id="usu_id" name="usu_id" value="<?php echo $_SESSION["usu_id"] ?>">
+						<!-- El creador del ticket se toma de la sesión en el servidor (Fase 3) -->
 
 						<div class="col-lg-12">
 							<fieldset class="form-group">

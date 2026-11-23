@@ -8,7 +8,7 @@
 
 # Volcados de base de datos (contienen datos reales)
 *.sql
-!/docs/schema.sql
+!/docs/bd_copeba_tickets.sql
 
 # Adjuntos subidos por usuarios (se conserva la protección)
 /public/document/*

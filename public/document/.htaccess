@@ -1,4 +1,9 @@
-# Carpeta de adjuntos de tickets: solo se sirven archivos, nunca se ejecutan.
+# Carpeta de adjuntos de tickets.
+# Fase 3: NINGÚN acceso HTTP directo. Los archivos se sirven solo a través de
+# controller/documento.php?op=ver&doc_id=N, que comprueba sesión y permisos.
+Require all denied
+
+# Defensa adicional por si el bloqueo anterior se desactivara: nunca ejecutar nada.
 
 # Sin listado de directorios ni CGI
 Options -Indexes -ExecCGI

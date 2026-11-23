@@ -1,11 +1,12 @@
 <?php
   require_once("../../config/conexion.php"); 
+  requiere_sesion("vista"); /* Fase 3: comprobación en el servidor */
   if(isset($_SESSION["usu_id"])){ 
 ?>
 <!DOCTYPE html>
 <html>
     <?php require_once("../MainHead/head.php");?>
-	<title>AnderCode</>::Perfil</title>
+	<title>Copeba · Perfil</title>
 </head>
 <body class="with-side-menu">
 
@@ -36,6 +37,13 @@
 			<div class="box-typical box-typical-padding">
 
 				<div class="row">
+						<div class="col-lg-12">
+							<fieldset class="form-group">
+								<label class="form-label semibold" for="txtpassactual">Contraseña Actual</label>
+								<input type="password" class="form-control" id="txtpassactual" name="txtpassactual" autocomplete="current-password">
+							</fieldset>
+						</div>
+
 						<div class="col-lg-6">
 							<fieldset class="form-group">
 								<label class="form-label semibold" for="exampleInput">Nueva Contraseña</label>

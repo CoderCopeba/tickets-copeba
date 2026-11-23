@@ -2,7 +2,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 <meta http-equiv="x-ua-compatible" content="ie=edge">
-<!-- TODO: agregar favicon cuando exista un archivo (no hay ninguno en el proyecto). -->
+<link rel="icon" type="image/png" href="../../public/img/copeba/distintivo-copeba.png">
 
 <link rel="stylesheet" href="../../public/css/separate/vendor/fancybox.min.css">
 <link rel="stylesheet" href="../../public/css/separate/pages/activity.min.css">

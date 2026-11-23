@@ -77,12 +77,78 @@
         return null;
     }
 
-    switch($_GET["op"]){
+    /* ===== Ayudantes de salida ===== */
+    function ticket_estado_html($estado, $tick_id, $puede_reabrir){
+        if ($estado === "Abierto"){
+            return '<span class="label label-pill label-success">Abierto</span>';
+        }
+        if ($puede_reabrir){
+            return '<a onClick="CambiarEstado('.(int)$tick_id.')"><span class="label label-pill label-danger">Cerrado</span></a>';
+        }
+        return '<span class="label label-pill label-danger">Cerrado</span>';
+    }
 
+    function ticket_nombre_asignado($usuario, $usu_asig){
+        $datos1 = $usuario->get_usuario_x_id($usu_asig);
+        $nombre = (is_array($datos1) && count($datos1) > 0) ? $datos1[0]["usu_nom"] : "(desconocido)";
+        return '<span class="label label-pill label-success">'.e($nombre).'</span>';
+    }
+
+    function ticket_fila($row, $usuario, $con_asignar){
+        $id = (int)$row["tick_id"];
+        $sub_array = array();
+        $sub_array[] = $id;
+        $sub_array[] = e($row["cat_nom"]);
+        $sub_array[] = e($row["tick_titulo"]);
+        $sub_array[] = ticket_estado_html($row["tick_estado"], $id, true);
+        $sub_array[] = date("d/m/Y H:i:s", strtotime($row["fech_crea"]));
+
+        if($row["fech_asig"]==null){
+            $sub_array[] = '<span class="label label-pill label-default">Sin Asignar</span>';
+        }else{
+            $sub_array[] = date("d/m/Y H:i:s", strtotime($row["fech_asig"]));
+        }
+
+        if($row["usu_asig"]==null){
+            $sub_array[] = $con_asignar
+                ? '<a onClick="asignar('.$id.');"><span class="label label-pill label-warning">Sin Asignar</span></a>'
+                : '<span class="label label-pill label-warning">Sin Asignar</span>';
+        }else{
+            $sub_array[] = ticket_nombre_asignado($usuario, $row["usu_asig"]);
+        }
+
+        $sub_array[] = '<button type="button" onClick="ver('.$id.');"  id="'.$id.'" class="btn btn-inline btn-primary btn-sm ladda-button"><i class="fa fa-eye"></i></button>';
+        return $sub_array;
+    }
+
+    function ticket_tabla_json($data){
+        return json_encode(array(
+            "sEcho"=>1,
+            "iTotalRecords"=>count($data),
+            "iTotalDisplayRecords"=>count($data),
+            "aaData"=>$data));
+    }
+
+    /* Ninguna operación de este controlador es pública */
+    requiere_sesion("ajax");
+
+    $op = $_GET["op"] ?? "";
+
+    switch($op){
+
+        /* ===== Cualquier rol: crear ticket propio ===== */
         case "insert":
             /* Si el envío supera post_max_size, PHP vacía $_POST y $_FILES */
             if (empty($_POST) && isset($_SERVER["CONTENT_LENGTH"]) && (int)$_SERVER["CONTENT_LENGTH"] > 0){
                 echo json_encode(array("error" => "El envío es demasiado grande. Máximo 10 MB por archivo."));
+                break;
+            }
+
+            $tick_titulo  = trim((string)($_POST["tick_titulo"] ?? ""));
+            $tick_descrip = html_limpio($_POST["tick_descrip"] ?? "");
+            $cat_id       = (int)($_POST["cat_id"] ?? 0);
+            if ($tick_titulo === "" || trim(strip_tags($tick_descrip)) === "" || $cat_id <= 0){
+                echo json_encode(array("error" => "Complete el título, la categoría y la descripción."));
                 break;
             }
 
@@ -94,8 +160,8 @@
                 break;
             }
 
-            /* 2) Crear ticket */
-            $datos=$ticket->insert_ticket($_POST["usu_id"] ?? null,$_POST["cat_id"] ?? null,$_POST["tick_titulo"] ?? "",$_POST["tick_descrip"] ?? "");
+            /* 2) Crear ticket: el creador SIEMPRE es el usuario de la sesión */
+            $datos=$ticket->insert_ticket(usuario_actual_id(), $cat_id, $tick_titulo, $tick_descrip);
 
             /* 3) Guardar adjuntos */
             if (is_array($datos)==true and count($datos)>0 and count($archivos)>0){
@@ -118,226 +184,164 @@
             echo json_encode($datos);
         break;
 
+        /* ===== Cerrar / reabrir: propietario o Soporte/Admin ===== */
         case "update":
-            $ticket->update_ticket($_POST["tick_id"]);
-            $ticket->insert_ticketdetalle_cerrar($_POST["tick_id"],$_POST["usu_id"]);
+            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
+            $ticket->update_ticket($tick_id);
+            $ticket->insert_ticketdetalle_cerrar($tick_id, usuario_actual_id());
+            echo json_encode(array("status" => "ok"));
         break;
 
         case "reabrir":
-            $ticket->reabrir_ticket($_POST["tick_id"]);
-            $ticket->insert_ticketdetalle_reabrir($_POST["tick_id"],$_POST["usu_id"]);
+            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
+            $ticket->reabrir_ticket($tick_id);
+            $ticket->insert_ticketdetalle_reabrir($tick_id, usuario_actual_id());
+            echo json_encode(array("status" => "ok"));
         break;
 
+        /* ===== Soporte y Administrador ===== */
         case "asignar":
-            $ticket->update_ticket_asignacion($_POST["tick_id"],$_POST["usu_asig"]);
+            requiere_rol(ROLES_SOPORTE);
+            $tick_id  = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
+            $usu_asig = (int)($_POST["usu_asig"] ?? 0);
+            if (!$usuario->es_asignable($usu_asig)){
+                echo json_encode(array("status" => "error", "message" => "Solo se puede asignar a un usuario de Soporte o Administrador activo."));
+                break;
+            }
+            $ticket->update_ticket_asignacion($tick_id, $usu_asig);
+            echo json_encode(array("status" => "ok"));
         break;
 
+        /* ===== Cualquier rol: SUS tickets (id tomado de la sesión) ===== */
         case "listar_x_usu":
-            $datos=$ticket->listar_ticket_x_usu($_POST["usu_id"]);
+            $datos=$ticket->listar_ticket_x_usu(usuario_actual_id());
             $data= Array();
             foreach($datos as $row){
-                $sub_array = array();
-                $sub_array[] = $row["tick_id"];
-                $sub_array[] = $row["cat_nom"];
-                $sub_array[] = $row["tick_titulo"];
-
-                if ($row["tick_estado"]=="Abierto"){
-                    $sub_array[] = '<span class="label label-pill label-success">Abierto</span>';
-                }else{
-                    $sub_array[] = '<a onClick="CambiarEstado('.$row["tick_id"].')"><span class="label label-pill label-danger">Cerrado</span></a>';
-                }
-
-                $sub_array[] = date("d/m/Y H:i:s", strtotime($row["fech_crea"]));
-
-                if($row["fech_asig"]==null){
-                    $sub_array[] = '<span class="label label-pill label-default">Sin Asignar</span>';
-                }else{
-                    $sub_array[] = date("d/m/Y H:i:s", strtotime($row["fech_asig"]));
-                }
-
-                if($row["usu_asig"]==null){
-                    $sub_array[] = '<span class="label label-pill label-warning">Sin Asignar</span>';
-                }else{
-                    $datos1=$usuario->get_usuario_x_id($row["usu_asig"]);
-                    foreach($datos1 as $row1){
-                        $sub_array[] = '<span class="label label-pill label-success">'. $row1["usu_nom"].'</span>';
-                    }
-                }
-
-                $sub_array[] = '<button type="button" onClick="ver('.$row["tick_id"].');"  id="'.$row["tick_id"].'" class="btn btn-inline btn-primary btn-sm ladda-button"><i class="fa fa-eye"></i></button>';
-                $data[] = $sub_array;
+                $data[] = ticket_fila($row, $usuario, false);
             }
-
-            $results = array(
-                "sEcho"=>1,
-                "iTotalRecords"=>count($data),
-                "iTotalDisplayRecords"=>count($data),
-                "aaData"=>$data);
-            echo json_encode($results);
+            echo ticket_tabla_json($data);
         break;
 
+        /* ===== Soporte y Administrador: todos los tickets ===== */
         case "listar":
+            requiere_rol(ROLES_SOPORTE);
             $datos=$ticket->listar_ticket();
             $data= Array();
             foreach($datos as $row){
-                $sub_array = array();
-                $sub_array[] = $row["tick_id"];
-                $sub_array[] = $row["cat_nom"];
-                $sub_array[] = $row["tick_titulo"];
-
-                if ($row["tick_estado"]=="Abierto"){
-                    $sub_array[] = '<span class="label label-pill label-success">Abierto</span>';
-                }else{
-                    $sub_array[] = '<a onClick="CambiarEstado('.$row["tick_id"].')"><span class="label label-pill label-danger">Cerrado</span><a>';
-                }
-
-                $sub_array[] = date("d/m/Y H:i:s", strtotime($row["fech_crea"]));
-
-                if($row["fech_asig"]==null){
-                    $sub_array[] = '<span class="label label-pill label-default">Sin Asignar</span>';
-                }else{
-                    $sub_array[] = date("d/m/Y H:i:s", strtotime($row["fech_asig"]));
-                }
-
-                if($row["usu_asig"]==null){
-                    $sub_array[] = '<a onClick="asignar('.$row["tick_id"].');"><span class="label label-pill label-warning">Sin Asignar</span></a>';
-                }else{
-                    $datos1=$usuario->get_usuario_x_id($row["usu_asig"]);
-                    foreach($datos1 as $row1){
-                        $sub_array[] = '<span class="label label-pill label-success">'. $row1["usu_nom"].'</span>';
-                    }
-                }
-
-                $sub_array[] = '<button type="button" onClick="ver('.$row["tick_id"].');"  id="'.$row["tick_id"].'" class="btn btn-inline btn-primary btn-sm ladda-button"><i class="fa fa-eye"></i></button>';
-                $data[] = $sub_array;
+                $data[] = ticket_fila($row, $usuario, true);
             }
-
-            $results = array(
-                "sEcho"=>1,
-                "iTotalRecords"=>count($data),
-                "iTotalDisplayRecords"=>count($data),
-                "aaData"=>$data);
-            echo json_encode($results);
+            echo ticket_tabla_json($data);
         break;
 
+        /* ===== Propietario o Soporte/Admin ===== */
         case "listardetalle":
-            $datos=$ticket->listar_ticketdetalle_x_ticket($_POST["tick_id"]);
-            ?>
-                <?php
-                    foreach($datos as $row){
-                        ?>
-                            <article class="activity-line-item box-typical">
-                                <div class="activity-line-date">
-                                    <?php echo date("d/m/Y", strtotime($row["fech_crea"]));?>
-                                </div>
-                                <header class="activity-line-item-header">
-                                    <div class="activity-line-item-user">
-                                        <div class="activity-line-item-user-photo">
-                                            <a href="#">
-                                                <img src="../../public/<?php echo $row['rol_id'] ?>.jpg" alt="">
-                                            </a>
-                                        </div>
-                                        <div class="activity-line-item-user-name"><?php echo $row['usu_nom'].' '.$row['usu_ape'];?></div>
-                                        <div class="activity-line-item-user-status">
-                                            <?php 
-                                                if ($row['rol_id']==1){
-                                                    echo 'Usuario';
-                                                }else{
-                                                    echo 'Soporte';
-                                                }
-                                            ?>
-                                        </div>
-                                    </div>
-                                </header>
-                                <div class="activity-line-action-list">
-                                    <section class="activity-line-action">
-                                        <div class="time"><?php echo date("H:i:s", strtotime($row["fech_crea"]));?></div>
-                                        <div class="cont">
-                                            <div class="cont-in">
-                                                <p>
-                                                    <?php echo $row["tickd_descrip"];?>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </section>
-                                </div>
-                            </article>
-                        <?php
-                    }
+            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
+            $datos=$ticket->listar_ticketdetalle_x_ticket($tick_id);
+            foreach($datos as $row){
                 ?>
-            <?php
+                    <article class="activity-line-item box-typical">
+                        <div class="activity-line-date">
+                            <?php echo date("d/m/Y", strtotime($row["fech_crea"]));?>
+                        </div>
+                        <header class="activity-line-item-header">
+                            <div class="activity-line-item-user">
+                                <div class="activity-line-item-user-photo">
+                                    <a href="#">
+                                        <img src="../../public/<?php echo e(rol_imagen($row['rol_id'])); ?>" alt="">
+                                    </a>
+                                </div>
+                                <div class="activity-line-item-user-name"><?php echo e($row['usu_nom'].' '.$row['usu_ape']);?></div>
+                                <div class="activity-line-item-user-status"><?php echo e(rol_nombre($row['rol_id'])); ?></div>
+                            </div>
+                        </header>
+                        <div class="activity-line-action-list">
+                            <section class="activity-line-action">
+                                <div class="time"><?php echo date("H:i:s", strtotime($row["fech_crea"]));?></div>
+                                <div class="cont">
+                                    <div class="cont-in">
+                                        <p>
+                                            <?php echo html_limpio($row["tickd_descrip"]); /* lista blanca también al mostrar */ ?>
+                                        </p>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </article>
+                <?php
+            }
         break;
 
         case "mostrar";
-            $datos=$ticket->listar_ticket_x_id($_POST["tick_id"]);  
+            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
+            $datos=$ticket->listar_ticket_x_id($tick_id);
             if(is_array($datos)==true and count($datos)>0){
+                $output = array();
                 foreach($datos as $row)
                 {
                     $output["tick_id"] = $row["tick_id"];
                     $output["usu_id"] = $row["usu_id"];
                     $output["cat_id"] = $row["cat_id"];
 
+                    /* titulo y cat_nom se usan con .val() (texto); descripción: HTML filtrado */
                     $output["tick_titulo"] = $row["tick_titulo"];
-                    $output["tick_descrip"] = $row["tick_descrip"];
+                    $output["tick_descrip"] = html_limpio($row["tick_descrip"]);
 
-                    if ($row["tick_estado"]=="Abierto"){
-                        $output["tick_estado"] = '<span class="label label-pill label-success">Abierto</span>';
-                    }else{
-                        $output["tick_estado"] = '<span class="label label-pill label-danger">Cerrado</span>';
-                    }
-
+                    $output["tick_estado"] = ticket_estado_html($row["tick_estado"], $row["tick_id"], false);
                     $output["tick_estado_texto"] = $row["tick_estado"];
 
                     $output["fech_crea"] = date("d/m/Y H:i:s", strtotime($row["fech_crea"]));
-                    $output["usu_nom"] = $row["usu_nom"];
-                    $output["usu_ape"] = $row["usu_ape"];
+                    /* se insertan con .html(): escapar */
+                    $output["usu_nom"] = e($row["usu_nom"]);
+                    $output["usu_ape"] = e($row["usu_ape"]);
                     $output["cat_nom"] = $row["cat_nom"];
                 }
                 echo json_encode($output);
-            }   
+            }
         break;
 
         case "insertdetalle":
-            $ticket->insert_ticketdetalle($_POST["tick_id"],$_POST["usu_id"],$_POST["tickd_descrip"]);
+            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
+            $tickd_descrip = html_limpio($_POST["tickd_descrip"] ?? "");
+            if (trim(strip_tags($tickd_descrip, "<img>")) === ""){
+                echo json_encode(array("status" => "error", "message" => "Falta la descripción."));
+                break;
+            }
+            $actual = $ticket->listar_ticket_x_id($tick_id);
+            if (($actual[0]["tick_estado"] ?? "") !== "Abierto"){
+                echo json_encode(array("status" => "error", "message" => "El ticket está cerrado."));
+                break;
+            }
+            /* el autor de la respuesta SIEMPRE es el usuario de la sesión */
+            $ticket->insert_ticketdetalle($tick_id, usuario_actual_id(), $tickd_descrip);
+            echo json_encode(array("status" => "ok"));
         break;
 
+        /* ===== Soporte y Administrador: estadísticas globales ===== */
         case "total";
-            $datos=$ticket->get_ticket_total();  
-            if(is_array($datos)==true and count($datos)>0){
-                foreach($datos as $row)
-                {
-                    $output["TOTAL"] = $row["TOTAL"];
-                }
-                echo json_encode($output);
-            }
+            requiere_rol(ROLES_SOPORTE);
+            $datos=$ticket->get_ticket_total();
+            echo json_encode(array("TOTAL" => $datos[0]["TOTAL"] ?? 0));
         break;
 
         case "totalabierto";
-            $datos=$ticket->get_ticket_totalabierto();  
-            if(is_array($datos)==true and count($datos)>0){
-                foreach($datos as $row)
-                {
-                    $output["TOTAL"] = $row["TOTAL"];
-                }
-                echo json_encode($output);
-            }
+            requiere_rol(ROLES_SOPORTE);
+            $datos=$ticket->get_ticket_totalabierto();
+            echo json_encode(array("TOTAL" => $datos[0]["TOTAL"] ?? 0));
         break;
 
         case "totalcerrado";
-            $datos=$ticket->get_ticket_totalcerrado();  
-            if(is_array($datos)==true and count($datos)>0){
-                foreach($datos as $row)
-                {
-                    $output["TOTAL"] = $row["TOTAL"];
-                }
-                echo json_encode($output);
-            }
+            requiere_rol(ROLES_SOPORTE);
+            $datos=$ticket->get_ticket_totalcerrado();
+            echo json_encode(array("TOTAL" => $datos[0]["TOTAL"] ?? 0));
         break;
 
         case "grafico";
-            $datos=$ticket->get_ticket_grafico();  
+            requiere_rol(ROLES_SOPORTE);
+            $datos=$ticket->get_ticket_grafico();
             echo json_encode($datos);
         break;
 
+        default:
+            auth_denegar(404, "ajax", "Operación no válida.");
     }
 ?>

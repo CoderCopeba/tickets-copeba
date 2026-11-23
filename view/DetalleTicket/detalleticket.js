@@ -116,23 +116,29 @@ var getUrlParameter = function getUrlParameter(sParam) {
 
 $(document).on("click","#btnenviar", function(){
     var tick_id = getUrlParameter('ID');
-    var usu_id = $('#user_idx').val();
     var tickd_descrip = $('#tickd_descrip').val();
 
     if ($('#tickd_descrip').summernote('isEmpty')){
         swal("Advertencia!", "Falta Descripción", "warning");
     }else{
-        $.post("../../controller/ticket.php?op=insertdetalle", { tick_id:tick_id,usu_id:usu_id,tickd_descrip:tickd_descrip}, function (data) {
+        /* El autor de la respuesta lo toma el servidor de la sesión */
+        $.post("../../controller/ticket.php?op=insertdetalle", { tick_id:tick_id, tickd_descrip:tickd_descrip}, function (data) {
+            var resp;
+            try { resp = JSON.parse(data); } catch (err) { resp = null; }
+            if (!resp || resp.status !== "ok"){
+                swal("Advertencia!", (resp && resp.message) ? resp.message : "No se pudo registrar.", "warning");
+                return;
+            }
             listardetalle(tick_id);
             $('#tickd_descrip').summernote('reset');
             swal("Correcto!", "Registrado Correctamente", "success");
-        }); 
+        });
     }
 });
 
 $(document).on("click","#btncerrarticket", function(){
     swal({
-        title: "HelpDesk",
+        title: "Copeba Tickets",
         text: "Esta seguro de Cerrar el Ticket?",
         type: "warning",
         showCancelButton: true,
@@ -144,8 +150,7 @@ $(document).on("click","#btncerrarticket", function(){
     function(isConfirm) {
         if (isConfirm) {
             var tick_id = getUrlParameter('ID');
-            var usu_id = $('#user_idx').val();
-            $.post("../../controller/ticket.php?op=update", { tick_id : tick_id,usu_id : usu_id }, function (data) {
+            $.post("../../controller/ticket.php?op=update", { tick_id : tick_id }, function (data) {
 
             });
 
@@ -157,7 +162,7 @@ $(document).on("click","#btncerrarticket", function(){
             listardetalle(tick_id);
 
             swal({
-                title: "HelpDesk!",
+                title: "Copeba Tickets",
                 text: "Ticket Cerrado correctamente.",
                 type: "success",
                 confirmButtonClass: "btn-success"
