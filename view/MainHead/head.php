@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="../../public/css/separate/vendor/fancybox.min.css">
 <link rel="stylesheet" href="../../public/css/separate/pages/activity.min.css">
 
-<link rel="stylesheet" href="../../public/css/lib/summernote/summernote.css"/>
+<link rel="stylesheet" href="../../public/css/lib/summernote/summernote-lite.min.css"/>
 <link rel="stylesheet" href="../../public/css/separate/pages/editor.min.css">
 
 <link rel="stylesheet" href="../../public/css/lib/font-awesome/font-awesome.min.css">

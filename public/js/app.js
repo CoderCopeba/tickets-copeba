@@ -165,7 +165,7 @@ $(document).ready(function(){
 				subMenu.slideUp();
 				subMenu.find('.opened').removeClass('opened');
 			} else {
-				if (clickLink.parents('.with-sub').size() == 1) {
+				if (clickLink.parents('.with-sub').length == 1) {
 					$('.side-menu-list .opened').removeClass('opened').find('ul').slideUp();
 				}
 				parent.addClass('opened');
@@ -218,7 +218,7 @@ $(document).ready(function(){
 	Select
 	========================================================================== */
 
-	if ($('.bootstrap-select').size()) {
+	if ($('.bootstrap-select').length) {
 		// Bootstrap-select
 		$('.bootstrap-select').selectpicker({
 			style: '',
@@ -227,7 +227,7 @@ $(document).ready(function(){
 		});
 	}
 
-	if ($('.select2').size()) {
+	if ($('.select2').length) {
 		// Select2
 		//$.fn.select2.defaults.set("minimumResultsForSearch", "Infinity");
 
@@ -299,7 +299,7 @@ $(document).ready(function(){
 		var sectionHeader = $('.section-header');
 		var sectionHeaderHeight = 0;
 
-		if (sectionHeader.size()) {
+		if (sectionHeader.length) {
 			sectionHeaderHeight = parseInt(sectionHeader.height()) + parseInt(sectionHeader.css('padding-bottom'));
 		}
 
