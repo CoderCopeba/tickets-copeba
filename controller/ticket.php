@@ -79,10 +79,43 @@
         return null;
     }
 
+
+    /* Guarda los adjuntos ya validados en public/document/<ticket>/ y los registra */
+    function adjuntos_guardar($archivos, $tick_id, $tickd_id, $documento){
+        if (count($archivos) === 0){ return; }
+        $ruta = "../public/document/".(int)$tick_id."/";
+        if (!is_dir($ruta)) {
+            mkdir($ruta, 0755, true);
+        }
+        foreach ($archivos as $archivo){
+            $nombre = adjunto_nombre_libre($ruta, $archivo["nombre"]);
+            if (move_uploaded_file($archivo["tmp"], $ruta.$nombre)){
+                $documento->insert_documento($tick_id, $nombre, $tickd_id);
+            }else{
+                error_log("No se pudo mover el adjunto del ticket ".(int)$tick_id);
+            }
+        }
+    }
+
+    /* Respuestas JSON comunes */
+    function ticket_ok(){
+        echo json_encode(array("status" => "ok"));
+    }
+    function ticket_error($mensaje){
+        echo json_encode(array("status" => "error", "message" => $mensaje));
+        exit();
+    }
+    function nombre_sesion(){
+        return trim(($_SESSION["usu_nom"] ?? "")." ".($_SESSION["usu_ape"] ?? ""));
+    }
+
     /* ===== Ayudantes de salida ===== */
     function ticket_estado_html($estado, $tick_id, $puede_reabrir){
         if ($estado === "Abierto"){
             return '<span class="label label-pill label-success">Abierto</span>';
+        }
+        if ($estado === "En espera"){
+            return '<span class="label label-pill label-warning">En espera</span>';
         }
         if ($puede_reabrir){
             return '<a onClick="CambiarEstado('.(int)$tick_id.')"><span class="label label-pill label-danger">Cerrado</span></a>';
@@ -168,39 +201,112 @@
             $datos=$ticket->insert_ticket(usuario_actual_id(), $cat_id, $tick_titulo, $tick_descrip, $prio_id);
 
             /* 3) Guardar adjuntos */
-            if (is_array($datos)==true and count($datos)>0 and count($archivos)>0){
-                $tick_id = (int)$datos[0]["tick_id"];
-                $ruta = "../public/document/".$tick_id."/";
-
-                if (!is_dir($ruta)) {
-                    mkdir($ruta, 0755, true);
-                }
-
-                foreach ($archivos as $archivo){
-                    $nombre = adjunto_nombre_libre($ruta, $archivo["nombre"]);
-                    if (move_uploaded_file($archivo["tmp"], $ruta.$nombre)){
-                        $documento->insert_documento($tick_id, $nombre);
-                    }else{
-                        error_log("No se pudo mover el adjunto del ticket ".$tick_id);
-                    }
-                }
+            if (is_array($datos) && count($datos) > 0){
+                adjuntos_guardar($archivos, (int)$datos[0]["tick_id"], null, $documento);
             }
             echo json_encode($datos);
         break;
 
+        /* ===== Pantalla de detalle: todo en una petición (propietario o Soporte/Admin) ===== */
+        case "detalle":
+            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
+            $t = $ticket->detalle($tick_id);
+            if ($t === null){
+                auth_denegar(404, "ajax", "El ticket no existe.");
+            }
+            $soporte = es_soporte();
+
+            /* Adjuntos agrupados: los del ticket (sin entrada) y los de cada respuesta */
+            $docs = array("ticket" => array());
+            foreach ($documento->get_documento_x_ticket($tick_id, $soporte) as $d){
+                $clave = $d["tickd_id"] === null ? "ticket" : "e".(int)$d["tickd_id"];
+                $docs[$clave][] = array("id" => (int)$d["doc_id"], "nombre" => $d["doc_nom"]);
+            }
+
+            $entradas = array();
+            foreach ($ticket->bitacora($tick_id, $soporte) as $b){
+                $entradas[] = array(
+                    "id"     => (int)$b["tickd_id"],
+                    "tipo"   => $b["tickd_tipo"],
+                    "html"   => html_limpio($b["tickd_descrip"]),
+                    "fecha"  => $b["fech_crea"],
+                    "autor"  => trim($b["usu_nom"]." ".$b["usu_ape"]),
+                    "rol"    => rol_nombre($b["rol_id"]),
+                    "es_ti"  => in_array((int)$b["rol_id"], ROLES_SOPORTE, true),
+                    "docs"   => $docs["e".(int)$b["tickd_id"]] ?? array(),
+                );
+            }
+
+            /* Tiempo objetivo (SLA) según la prioridad */
+            $limite = strtotime($t["fech_crea"]) + (int)$t["prio_sla_horas"] * 3600;
+
+            echo json_encode(array(
+                "ticket" => array(
+                    "id"            => (int)$t["tick_id"],
+                    "titulo"        => $t["tick_titulo"],
+                    "html"          => html_limpio($t["tick_descrip"]),
+                    "estado"        => $t["tick_estado"],
+                    "fecha"         => $t["fech_crea"],
+                    "categoria"     => $t["cat_nom"],
+                    "prioridad"     => $t["prio_nom"],
+                    "prio_id"       => (int)$t["prio_id"],
+                    "sla_horas"     => (int)$t["prio_sla_horas"],
+                    "sla_limite"    => date("Y-m-d H:i:s", $limite),
+                    "fech_cierre"   => $t["fech_cierre"],
+                    "solicitante"   => trim($t["usu_nom"]." ".$t["usu_ape"]),
+                    "asignado"      => $t["usu_asig"] ? trim($t["asig_nom"]." ".$t["asig_ape"]) : null,
+                    "asignado_a_mi" => (int)$t["usu_asig"] === usuario_actual_id(),
+                    "docs"          => $docs["ticket"],
+                ),
+                "bitacora" => $entradas,
+                "ahora"    => date("Y-m-d H:i:s"),
+                "permisos" => array(
+                    "soporte" => $soporte,
+                    "propio"  => (int)$t["usu_id"] === usuario_actual_id(),
+                ),
+            ));
+        break;
+
+        /* ===== Responder (todos) o nota interna (solo TI), con adjuntos ===== */
+        case "responder":
+            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
+            $tipo = ($_POST["tipo"] ?? "respuesta") === "nota" ? "nota" : "respuesta";
+            if ($tipo === "nota" && !es_soporte()){
+                auth_denegar(403, "ajax", "Solo el equipo de TI puede escribir notas internas.");
+            }
+            $tickd_descrip = html_limpio($_POST["tickd_descrip"] ?? "");
+            if (trim(strip_tags($tickd_descrip, "<img>")) === ""){
+                ticket_error("Escribe el mensaje antes de enviarlo.");
+            }
+            $t = $ticket->detalle($tick_id);
+            if ($t === null || $t["tick_estado"] === "Cerrado"){
+                ticket_error("El ticket está cerrado. Reábrelo para responder.");
+            }
+            $archivos = array();
+            $error_adjunto = adjuntos_validar($archivos);
+            if ($error_adjunto !== null){
+                ticket_error($error_adjunto);
+            }
+            /* el autor SIEMPRE es el usuario de la sesión */
+            $tickd_id = $ticket->insert_ticketdetalle($tick_id, usuario_actual_id(), $tickd_descrip, $tipo);
+            adjuntos_guardar($archivos, $tick_id, $tickd_id, $documento);
+            ticket_ok();
+        break;
+
         /* ===== Cerrar / reabrir: propietario o Soporte/Admin ===== */
         case "update":
+        case "cerrar":
             $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
-            $ticket->update_ticket($tick_id);
-            $ticket->insert_ticketdetalle_cerrar($tick_id, usuario_actual_id());
-            echo json_encode(array("status" => "ok"));
+            $ticket->cambiar_estado($tick_id, "Cerrado");
+            $ticket->insert_evento($tick_id, usuario_actual_id(), "Ticket cerrado por ".nombre_sesion());
+            ticket_ok();
         break;
 
         case "reabrir":
             $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
-            $ticket->reabrir_ticket($tick_id);
-            $ticket->insert_ticketdetalle_reabrir($tick_id, usuario_actual_id());
-            echo json_encode(array("status" => "ok"));
+            $ticket->cambiar_estado($tick_id, "Abierto");
+            $ticket->insert_evento($tick_id, usuario_actual_id(), "Ticket reabierto por ".nombre_sesion());
+            ticket_ok();
         break;
 
         /* ===== Soporte y Administrador ===== */
@@ -209,11 +315,47 @@
             $tick_id  = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
             $usu_asig = (int)($_POST["usu_asig"] ?? 0);
             if (!$usuario->es_asignable($usu_asig)){
-                echo json_encode(array("status" => "error", "message" => "Solo se puede asignar a un usuario de Soporte o Administrador activo."));
-                break;
+                ticket_error("Solo se puede asignar a un usuario de Soporte o Administrador activo.");
             }
             $ticket->update_ticket_asignacion($tick_id, $usu_asig);
-            echo json_encode(array("status" => "ok"));
+            $destino = $usuario->get_usuario_x_id($usu_asig);
+            $nombre  = trim(($destino[0]["usu_nom"] ?? "")." ".($destino[0]["usu_ape"] ?? ""));
+            $ticket->insert_evento($tick_id, usuario_actual_id(), "Ticket asignado a ".$nombre." por ".nombre_sesion());
+            ticket_ok();
+        break;
+
+        /* Autoasignarse el ticket */
+        case "tomar":
+            requiere_rol(ROLES_SOPORTE);
+            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
+            $ticket->update_ticket_asignacion($tick_id, usuario_actual_id());
+            $ticket->insert_evento($tick_id, usuario_actual_id(), nombre_sesion()." tomó el ticket");
+            ticket_ok();
+        break;
+
+        /* Posponer: queda "En espera" con el motivo en la bitácora */
+        case "posponer":
+            requiere_rol(ROLES_SOPORTE);
+            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
+            $motivo = trim(mb_substr((string)($_POST["motivo"] ?? ""), 0, 300));
+            if ($motivo === ""){
+                ticket_error("Indica el motivo para posponer el ticket.");
+            }
+            $t = $ticket->detalle($tick_id);
+            if ($t === null || $t["tick_estado"] === "Cerrado"){
+                ticket_error("Solo se pueden posponer tickets abiertos.");
+            }
+            $ticket->cambiar_estado($tick_id, "En espera");
+            $ticket->insert_evento($tick_id, usuario_actual_id(), "Ticket pospuesto por ".nombre_sesion().": ".$motivo);
+            ticket_ok();
+        break;
+
+        case "reanudar":
+            requiere_rol(ROLES_SOPORTE);
+            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
+            $ticket->cambiar_estado($tick_id, "Abierto");
+            $ticket->insert_evento($tick_id, usuario_actual_id(), "Ticket reanudado por ".nombre_sesion());
+            ticket_ok();
         break;
 
         /* ===== Cualquier rol: SUS tickets (id tomado de la sesión) ===== */
@@ -235,89 +377,6 @@
                 $data[] = ticket_fila($row, $usuario, true);
             }
             echo ticket_tabla_json($data);
-        break;
-
-        /* ===== Propietario o Soporte/Admin ===== */
-        case "listardetalle":
-            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
-            $datos=$ticket->listar_ticketdetalle_x_ticket($tick_id);
-            foreach($datos as $row){
-                ?>
-                    <article class="activity-line-item box-typical">
-                        <div class="activity-line-date">
-                            <?php echo date("d/m/Y", strtotime($row["fech_crea"]));?>
-                        </div>
-                        <header class="activity-line-item-header">
-                            <div class="activity-line-item-user">
-                                <div class="activity-line-item-user-photo">
-                                    <a href="#">
-                                        <img src="../../public/<?php echo e(rol_imagen($row['rol_id'])); ?>" alt="">
-                                    </a>
-                                </div>
-                                <div class="activity-line-item-user-name"><?php echo e($row['usu_nom'].' '.$row['usu_ape']);?></div>
-                                <div class="activity-line-item-user-status"><?php echo e(rol_nombre($row['rol_id'])); ?></div>
-                            </div>
-                        </header>
-                        <div class="activity-line-action-list">
-                            <section class="activity-line-action">
-                                <div class="time"><?php echo date("H:i:s", strtotime($row["fech_crea"]));?></div>
-                                <div class="cont">
-                                    <div class="cont-in">
-                                        <p>
-                                            <?php echo html_limpio($row["tickd_descrip"]); /* lista blanca también al mostrar */ ?>
-                                        </p>
-                                    </div>
-                                </div>
-                            </section>
-                        </div>
-                    </article>
-                <?php
-            }
-        break;
-
-        case "mostrar";
-            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
-            $datos=$ticket->listar_ticket_x_id($tick_id);
-            if(is_array($datos)==true and count($datos)>0){
-                $output = array();
-                foreach($datos as $row)
-                {
-                    $output["tick_id"] = $row["tick_id"];
-                    $output["usu_id"] = $row["usu_id"];
-                    $output["cat_id"] = $row["cat_id"];
-
-                    /* titulo y cat_nom se usan con .val() (texto); descripción: HTML filtrado */
-                    $output["tick_titulo"] = $row["tick_titulo"];
-                    $output["tick_descrip"] = html_limpio($row["tick_descrip"]);
-
-                    $output["tick_estado"] = ticket_estado_html($row["tick_estado"], $row["tick_id"], false);
-                    $output["tick_estado_texto"] = $row["tick_estado"];
-
-                    $output["fech_crea"] = date("d/m/Y H:i:s", strtotime($row["fech_crea"]));
-                    /* se insertan con .html(): escapar */
-                    $output["usu_nom"] = e($row["usu_nom"]);
-                    $output["usu_ape"] = e($row["usu_ape"]);
-                    $output["cat_nom"] = $row["cat_nom"];
-                }
-                echo json_encode($output);
-            }
-        break;
-
-        case "insertdetalle":
-            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
-            $tickd_descrip = html_limpio($_POST["tickd_descrip"] ?? "");
-            if (trim(strip_tags($tickd_descrip, "<img>")) === ""){
-                echo json_encode(array("status" => "error", "message" => "Falta la descripción."));
-                break;
-            }
-            $actual = $ticket->listar_ticket_x_id($tick_id);
-            if (($actual[0]["tick_estado"] ?? "") !== "Abierto"){
-                echo json_encode(array("status" => "error", "message" => "El ticket está cerrado."));
-                break;
-            }
-            /* el autor de la respuesta SIEMPRE es el usuario de la sesión */
-            $ticket->insert_ticketdetalle($tick_id, usuario_actual_id(), $tickd_descrip);
-            echo json_encode(array("status" => "ok"));
         break;
 
         default:

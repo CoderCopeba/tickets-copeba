@@ -28,9 +28,9 @@ class Inicio extends Conectar {
     public function resumen_admin(){
         $totales = $this->uno("
             SELECT COUNT(*) AS total,
-                   COALESCE(SUM(tick_estado='Abierto'),0) AS abiertos,
+                   COALESCE(SUM(tick_estado<>'Cerrado'),0) AS abiertos,
                    COALESCE(SUM(tick_estado='Cerrado'),0) AS cerrados,
-                   COALESCE(SUM(tick_estado='Abierto' AND usu_asig IS NULL),0) AS sin_asignar
+                   COALESCE(SUM(tick_estado<>'Cerrado' AND usu_asig IS NULL),0) AS sin_asignar
             FROM tm_ticket WHERE est=1");
 
         $categorias = $this->todos("
@@ -50,18 +50,18 @@ class Inicio extends Conectar {
     /* Soporte: su trabajo asignado y la cola sin asignar */
     public function resumen_soporte($usu_id){
         $totales = $this->uno("
-            SELECT COALESCE(SUM(tick_estado='Abierto' AND usu_asig=?),0) AS mis_abiertos,
-                   COALESCE(SUM(tick_estado='Abierto' AND usu_asig IS NULL),0) AS sin_asignar,
+            SELECT COALESCE(SUM(tick_estado<>'Cerrado' AND usu_asig=?),0) AS mis_abiertos,
+                   COALESCE(SUM(tick_estado<>'Cerrado' AND usu_asig IS NULL),0) AS sin_asignar,
                    COALESCE(SUM(tick_estado='Cerrado' AND usu_asig=?),0) AS mis_cerrados,
-                   COALESCE(SUM(tick_estado='Abierto'),0) AS abiertos
+                   COALESCE(SUM(tick_estado<>'Cerrado'),0) AS abiertos
             FROM tm_ticket WHERE est=1", array($usu_id, $usu_id));
 
         $asignados = $this->todos("SELECT ".self::CAMPOS_TICKET."
-            WHERE t.est=1 AND t.tick_estado='Abierto' AND t.usu_asig=?
+            WHERE t.est=1 AND t.tick_estado<>'Cerrado' AND t.usu_asig=?
             ORDER BY t.fech_crea ASC LIMIT 8", array($usu_id));
 
         $sin_asignar = $this->todos("SELECT ".self::CAMPOS_TICKET."
-            WHERE t.est=1 AND t.tick_estado='Abierto' AND t.usu_asig IS NULL
+            WHERE t.est=1 AND t.tick_estado<>'Cerrado' AND t.usu_asig IS NULL
             ORDER BY t.fech_crea ASC LIMIT 8");
 
         return array("totales" => $totales, "asignados" => $asignados, "sin_asignar" => $sin_asignar);
@@ -71,7 +71,7 @@ class Inicio extends Conectar {
     public function resumen_usuario($usu_id){
         $totales = $this->uno("
             SELECT COUNT(*) AS total,
-                   COALESCE(SUM(tick_estado='Abierto'),0) AS abiertos,
+                   COALESCE(SUM(tick_estado<>'Cerrado'),0) AS abiertos,
                    COALESCE(SUM(tick_estado='Cerrado'),0) AS cerrados
             FROM tm_ticket WHERE est=1 AND usu_id=?", array($usu_id));
 

@@ -7,16 +7,9 @@
         return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
     }
 
-    function estado(t) {
-        var abierto = t.tick_estado === 'Abierto';
-        return $('<span class="cp-estado">')
-            .addClass(abierto ? 'abierto' : 'cerrado')
-            .text(abierto ? 'Abierto' : 'Cerrado');
-    }
-
     function soporte(t) {
         if (t.asignado) { return $('<span>').text(t.asignado); }
-        return t.tick_estado === 'Abierto'
+        return t.tick_estado !== 'Cerrado'
             ? $('<span class="cp-estado pendiente">').text('Pendiente')
             : $('<span class="cp-suave">').text('—');
     }
@@ -42,7 +35,7 @@
                 $('<td class="cp-mono">').text(Copeba.folio(t.tick_id)),
                 $('<td>').text(t.tick_titulo),
                 $('<td class="cp-suave">').text(t.cat_nom),
-                $('<td>').append(estado(t)),
+                $('<td>').append(Copeba.estado(t.tick_estado)),
                 $('<td>').append(soporte(t)),
                 $('<td class="cp-mono">').text(Copeba.fecha(t.fech_crea)),
                 $('<td>').append(botonVer(t.tick_id))

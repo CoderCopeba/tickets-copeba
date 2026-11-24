@@ -4,12 +4,14 @@
      Copeba.exito(texto)                 círculo de éxito, sin botón, se cierra solo
      Copeba.aviso(texto) / .error(texto) mensaje con botón "Entendido"
      Copeba.confirmar(texto, fn, {peligro:true})
+     Copeba.pedirTexto(texto, ayuda, fn)  pide un texto obligatorio (motivo, etc.)
      Copeba.enviar(url, datos, msgError) POST que espera {status:"ok"} (acepta FormData)
      Copeba.leer(respuesta)              JSON seguro (devuelve null si no es JSON)
      Copeba.tabla(selector, url, datos)  DataTable con la configuración común
      Copeba.editor(selector, alto, {barra:'simple', ayuda:'...'}) editor Summernote
      Copeba.param(nombre)                parámetro de la URL (?ID=...)
-     Copeba.folio(id), Copeba.fecha(valor)
+     Copeba.folio(id), Copeba.fecha(valor), Copeba.hora(valor), Copeba.iniciales(nombre)
+     Copeba.estado(texto)                etiqueta de color del estado del ticket
    ========================================================================== */
 var Copeba = (function ($) {
     'use strict';
@@ -54,6 +56,25 @@ var Copeba = (function ($) {
             cancelButtonText: 'No',
             closeOnConfirm: false
         }, function (ok) { if (ok) { alConfirmar(); } });
+    }
+
+    /* Pide un texto obligatorio (p. ej. un motivo). alAceptar(texto) */
+    function pedirTexto(texto, ayuda, alAceptar) {
+        swal({
+            title: TITULO,
+            text: texto,
+            type: 'input',
+            inputPlaceholder: ayuda || '',
+            showCancelButton: true,
+            confirmButtonText: 'Aceptar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonClass: 'btn-warning',
+            closeOnConfirm: false
+        }, function (valor) {
+            if (valor === false) { return; }
+            if ($.trim(valor) === '') { swal.showInputError('Este dato es obligatorio.'); return; }
+            alAceptar($.trim(valor));
+        });
     }
 
     /* ---------- Peticiones al servidor ---------- */
@@ -185,10 +206,27 @@ var Copeba = (function ($) {
         return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(valor);
     }
 
+    /* "2026-11-23 10:30:00" -> "10:30" */
+    function hora(valor) {
+        return valor ? String(valor).substr(11, 5) : '';
+    }
+
+    /* "Ana Martínez" -> "AM" */
+    function iniciales(nombre) {
+        var partes = String(nombre || '').trim().split(/\s+/);
+        return ((partes[0] || '').charAt(0) + (partes[1] || '').charAt(0)).toUpperCase() || '?';
+    }
+
+    /* Etiqueta de estado del ticket: Abierto (verde), En espera (ámbar), Cerrado (rojo) */
+    var CLASE_ESTADO = { 'Abierto': 'abierto', 'En espera': 'pendiente', 'Cerrado': 'cerrado' };
+    function estado(texto) {
+        return $('<span class="cp-estado">').addClass(CLASE_ESTADO[texto] || 'abierto').text(texto);
+    }
+
     return {
-        exito: exito, aviso: aviso, error: error, confirmar: confirmar,
+        exito: exito, aviso: aviso, error: error, confirmar: confirmar, pedirTexto: pedirTexto,
         leer: leer, enviar: enviar,
         tabla: tabla, editor: editor,
-        param: param, folio: folio, fecha: fecha
+        param: param, folio: folio, fecha: fecha, hora: hora, iniciales: iniciales, estado: estado
     };
 })(jQuery);

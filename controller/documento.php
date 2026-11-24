@@ -9,29 +9,6 @@
     $op = $_GET["op"] ?? "";
 
     switch($op){
-        /* ===== Lista de documentos del ticket: propietario o Soporte/Admin ===== */
-        case "listar":
-            $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0, "ajax");
-            $datos=$documento->get_documento_x_ticket($tick_id);
-            $data= Array();
-            foreach($datos as $row){
-                $sub_array = array();
-                /* Los archivos se sirven a través de op=ver, que vuelve a comprobar el permiso */
-                $url = e('../../controller/documento.php?op=ver&doc_id='.(int)$row["doc_id"]);
-                $nombre = e($row["doc_nom"]);
-                $sub_array[] = '<a href="'.$url.'" target="_blank" rel="noopener">'.$nombre.'</a>';
-                $sub_array[] = '<a type="button" href="'.$url.'" target="_blank" rel="noopener" class="btn btn-inline btn-primary btn-sm ladda-button"><i class="fa fa-eye"></i></a>';
-                $data[] = $sub_array;
-            }
-
-            $results = array(
-                "sEcho"=>1,
-                "iTotalRecords"=>count($data),
-                "iTotalDisplayRecords"=>count($data),
-                "aaData"=>$data);
-            echo json_encode($results);
-        break;
-
         /* ===== Ver / descargar un documento: propietario o Soporte/Admin =====
            Se abre en una pestaña nueva, por eso responde como vista (403/404 en HTML). */
         case "ver":
@@ -41,6 +18,10 @@
                 auth_denegar(404, "vista", "El documento no existe.");
             }
             requiere_acceso_ticket($ticket, $doc["tick_id"], "vista");
+            /* Adjuntos de notas internas: solo TI */
+            if ($doc["tipo"] === "nota" && !es_soporte()){
+                auth_denegar(404, "vista", "El documento no existe.");
+            }
 
             /* nombre guardado en BD -> solo el nombre, nunca una ruta */
             $nombre = basename(str_replace("\\", "/", (string)$doc["doc_nom"]));

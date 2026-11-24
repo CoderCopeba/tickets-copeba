@@ -116,107 +116,71 @@
             return $resultado=$sql->fetchAll();
         }
 
-        public function listar_ticketdetalle_x_ticket($tick_id){
-            $conectar= parent::conexion();
-            parent::set_names();
-            $sql="SELECT
-                td_ticketdetalle.tickd_id,
-                td_ticketdetalle.tickd_descrip,
-                td_ticketdetalle.fech_crea,
-                tm_usuario.usu_nom,
-                tm_usuario.usu_ape,
-                tm_usuario.rol_id
-                FROM 
-                td_ticketdetalle
-                INNER join tm_usuario on td_ticketdetalle.usu_id = tm_usuario.usu_id
-                WHERE 
-                tick_id =?";
-            $sql=$conectar->prepare($sql);
-            $sql->bindValue(1, $tick_id);
-            $sql->execute();
-            return $resultado=$sql->fetchAll();
+        /* ===== Bitácora: respuesta (visible al usuario), nota (interna TI) o evento ===== */
+        const TIPOS_BITACORA = array("respuesta", "nota", "evento");
+
+        /* Devuelve el id de la nueva entrada */
+        public function insert_ticketdetalle($tick_id, $usu_id, $tickd_descrip, $tipo = "respuesta"){
+            $tipo = in_array($tipo, self::TIPOS_BITACORA, true) ? $tipo : "respuesta";
+            $conectar = parent::conexion();
+            $sql = $conectar->prepare("INSERT INTO td_ticketdetalle (tick_id, usu_id, tickd_tipo, tickd_descrip, fech_crea, est) VALUES (?, ?, ?, ?, now(), 1)");
+            $sql->execute(array((int)$tick_id, (int)$usu_id, $tipo, $tickd_descrip));
+            return (int)$conectar->lastInsertId();
         }
 
-        public function insert_ticketdetalle($tick_id,$usu_id,$tickd_descrip){
-            $conectar= parent::conexion();
-            parent::set_names();
-                $sql="INSERT INTO td_ticketdetalle (tickd_id,tick_id,usu_id,tickd_descrip,fech_crea,est) VALUES (NULL,?,?,?,now(),'1');";
-            $sql=$conectar->prepare($sql);
-            $sql->bindValue(1, $tick_id);
-            $sql->bindValue(2, $usu_id);
-            $sql->bindValue(3, $tickd_descrip);
-            $sql->execute();
-            return $resultado=$sql->fetchAll();
+        /* Evento automático (texto plano, se escapa al guardarlo) */
+        public function insert_evento($tick_id, $usu_id, $texto){
+            return $this->insert_ticketdetalle($tick_id, $usu_id, e($texto), "evento");
         }
 
-        public function insert_ticketdetalle_cerrar($tick_id,$usu_id){
-            $conectar= parent::conexion();
-            parent::set_names();
-                $sql="call sp_i_ticketdetalle_01(?,?)";
-            $sql=$conectar->prepare($sql);
-            $sql->bindValue(1, $tick_id);
-            $sql->bindValue(2, $usu_id);
-            $sql->execute();
-            $sql->closeCursor();
-            return array();
+        /* Estados válidos: Abierto, En espera, Cerrado */
+        const ESTADOS = array("Abierto", "En espera", "Cerrado");
+
+        public function cambiar_estado($tick_id, $estado){
+            if (!in_array($estado, self::ESTADOS, true)) { return false; }
+            $sql = parent::conexion()->prepare("UPDATE tm_ticket SET tick_estado = ? WHERE tick_id = ?");
+            return $sql->execute(array($estado, (int)$tick_id));
         }
 
-        public function insert_ticketdetalle_reabrir($tick_id,$usu_id){
-            $conectar= parent::conexion();
-            parent::set_names();
-                $sql="	INSERT INTO td_ticketdetalle 
-                    (tickd_id,tick_id,usu_id,tickd_descrip,fech_crea,est) 
-                    VALUES 
-                    (NULL,?,?,'Ticket Re-Abierto...',now(),'1');";
-            $sql=$conectar->prepare($sql);
-            $sql->bindValue(1, $tick_id);
-            $sql->bindValue(2, $usu_id);
-            $sql->execute();
-            return $resultado=$sql->fetchAll();
+        public function update_ticket_asignacion($tick_id, $usu_asig){
+            $sql = parent::conexion()->prepare("UPDATE tm_ticket SET usu_asig = ?, fech_asig = now() WHERE tick_id = ?");
+            return $sql->execute(array((int)$usu_asig, (int)$tick_id));
         }
 
-        public function update_ticket($tick_id){
-            $conectar= parent::conexion();
-            parent::set_names();
-            $sql="update tm_ticket 
-                set	
-                    tick_estado = 'Cerrado'
-                where
-                    tick_id = ?";
-            $sql=$conectar->prepare($sql);
-            $sql->bindValue(1, $tick_id);
-            $sql->execute();
-            return $resultado=$sql->fetchAll();
+        /* Todo lo que muestra la pantalla de detalle (un solo registro) */
+        public function detalle($tick_id){
+            $sql = parent::conexion()->prepare("
+                SELECT t.tick_id, t.usu_id, t.tick_titulo, t.tick_descrip, t.tick_estado,
+                       t.fech_crea, t.usu_asig, t.fech_asig,
+                       c.cat_nom,
+                       p.prio_id, p.prio_nom, p.prio_sla_horas,
+                       u.usu_nom, u.usu_ape, u.usu_correo,
+                       a.usu_nom AS asig_nom, a.usu_ape AS asig_ape,
+                       (SELECT MAX(d.fech_crea) FROM td_ticketdetalle d
+                         WHERE d.tick_id = t.tick_id AND d.tickd_tipo = 'evento'
+                           AND d.tickd_descrip LIKE 'Ticket cerrado%') AS fech_cierre
+                FROM tm_ticket t
+                INNER JOIN tm_categoria c ON c.cat_id = t.cat_id
+                INNER JOIN tm_prioridad p ON p.prio_id = t.prio_id
+                INNER JOIN tm_usuario u ON u.usu_id = t.usu_id
+                LEFT JOIN tm_usuario a ON a.usu_id = t.usu_asig
+                WHERE t.tick_id = ? AND t.est = 1");
+            $sql->execute(array((int)$tick_id));
+            $fila = $sql->fetch(PDO::FETCH_ASSOC);
+            return is_array($fila) ? $fila : null;
         }
 
-        public function reabrir_ticket($tick_id){
-            $conectar= parent::conexion();
-            parent::set_names();
-            $sql="update tm_ticket 
-                set	
-                    tick_estado = 'Abierto'
-                where
-                    tick_id = ?";
-            $sql=$conectar->prepare($sql);
-            $sql->bindValue(1, $tick_id);
-            $sql->execute();
-            return $resultado=$sql->fetchAll();
-        }
-
-        public function update_ticket_asignacion($tick_id,$usu_asig){
-            $conectar= parent::conexion();
-            parent::set_names();
-            $sql="update tm_ticket 
-                set	
-                    usu_asig = ?,
-                    fech_asig = now()
-                where
-                    tick_id = ?";
-            $sql=$conectar->prepare($sql);
-            $sql->bindValue(1, $usu_asig);
-            $sql->bindValue(2, $tick_id);
-            $sql->execute();
-            return $resultado=$sql->fetchAll();
+        /* Entradas de la bitácora; las notas internas solo si $con_notas */
+        public function bitacora($tick_id, $con_notas){
+            $sql = parent::conexion()->prepare("
+                SELECT d.tickd_id, d.tickd_tipo, d.tickd_descrip, d.fech_crea,
+                       u.usu_id, u.usu_nom, u.usu_ape, u.rol_id
+                FROM td_ticketdetalle d
+                INNER JOIN tm_usuario u ON u.usu_id = d.usu_id
+                WHERE d.tick_id = ? AND d.est = 1".($con_notas ? "" : " AND d.tickd_tipo <> 'nota'")."
+                ORDER BY d.fech_crea, d.tickd_id");
+            $sql->execute(array((int)$tick_id));
+            return $sql->fetchAll(PDO::FETCH_ASSOC);
         }
 
 
