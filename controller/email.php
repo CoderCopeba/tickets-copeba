@@ -25,7 +25,7 @@
 
         /* Aviso de asignación: solo Soporte/Admin */
         case "ticket_asignado":
-            requiere_rol(ROLES_SOPORTE);
+            requiere_soporte();
             $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
             $email->ticket_asignado($tick_id);
             break;

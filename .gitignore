@@ -9,6 +9,7 @@
 # Volcados de base de datos (contienen datos reales)
 *.sql
 !/docs/bd_copeba_tickets.sql
+!/instalar/migraciones/*.sql
 
 # Adjuntos subidos por usuarios (se conserva la protección)
 /public/document/*
@@ -23,3 +24,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.log
+
+# Credenciales de conexión (nube y local)
+*.cnf

@@ -26,7 +26,7 @@
 						<div class="tbl-cell">
 							<h3>Perfil</h3>
 							<ol class="breadcrumb breadcrumb-simple">
-								<li><a href="#">Home</a></li>
+								<li><a href="../Home/">Inicio</a></li>
 								<li class="active">Cambiar Contraseña</li>
 							</ol>
 						</div>

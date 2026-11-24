@@ -1,3 +1,4 @@
+<?php require_once(__DIR__."/../../config/iconos.php"); ?>
 <head lang="es">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
@@ -23,3 +24,4 @@
 <link rel="stylesheet" href="../../public/css/separate/vendor/select2.min.css">
 
 <link rel="stylesheet" href="../../public/css/main.css">
+<link rel="stylesheet" href="../../public/css/copeba-app.css?v=<?php echo filemtime(__DIR__."/../../public/css/copeba-app.css"); ?>">

@@ -80,6 +80,11 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16.5v.5"/></svg>
                     La página estuvo abierta demasiado tiempo. Vuelve a intentarlo.
                 </div>
+            <?php } elseif ($mensaje === "5") { ?>
+                <div class="cp-alerta" role="alert">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                    Tu contraseña temporal ya venció. Pide otra a Informática.
+                </div>
             <?php } ?>
 
             <div class="cp-campo">
@@ -126,7 +131,7 @@
     <dialog class="cp-modal" id="modal_olvido" aria-labelledby="modal_olvido_titulo">
         <div class="cp-modal-cab">
             <h2 id="modal_olvido_titulo">¿Olvidaste tu contraseña?</h2>
-            <p>Por seguridad, la contraseña solo la restablece el área de Informática. Contáctanos por una de estas vías:</p>
+            <p>Informática te dará una <b>contraseña temporal</b>. Entra con ella y el sistema te pedirá crear una nueva (escribirla dos veces). Contáctanos por una de estas vías:</p>
         </div>
         <div class="cp-modal-cuerpo">
             <?php if ($soporte_correo) { ?>
@@ -159,7 +164,7 @@
             <?php if (!$soporte_correo && !$soporte_telefono && !$soporte_extension) { ?>
             <p class="cp-modal-nota">Comunícate directamente con el área de Informática.</p>
             <?php } ?>
-            <p class="cp-modal-nota">Nunca compartas tu contraseña por correo ni por teléfono; Informática te asignará una temporal.</p>
+            <p class="cp-modal-nota">La temporal sirve una sola vez y vence en 24 horas. Nunca compartas tu contraseña definitiva: ni Informática la conoce.</p>
         </div>
         <div class="cp-modal-pie">
             <button type="button" class="cp-boton-sec" id="btn_cerrar_olvido">Cerrar</button>

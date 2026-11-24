@@ -3,20 +3,20 @@
  * Autenticación y autorización centralizadas.
  * Se carga desde config/conexion.php, así que está disponible en todo el proyecto.
  *
- * Roles:
- *   1 = Usuario        -> crea tickets y solo ve/responde los suyos
- *   2 = Soporte        -> gestiona, asigna y cierra todos los tickets
- *   3 = Administrador  -> todo lo de Soporte + mantenimiento de usuarios
+ * Tipo de cuenta (tm_rol):
+ *   1 = Colaborador               -> crea tickets y ve/responde los suyos
+ *   3 = Administrador del sistema -> todo, incluido mantenimiento de usuarios y áreas
+ *
+ * El trabajo de cada persona lo define su ÁREA (td_area_usuario), como en Canvas:
+ * quien pertenece a un área que atiende tickets (Informática) gestiona tickets.
  *
  * Modo 'ajax'  -> responde 401/403/404 en JSON y termina.
  * Modo 'vista' -> sin sesión redirige al login; sin permiso muestra 403.
  */
 
-const ROL_USUARIO = 1;
-const ROL_SOPORTE = 2;
-const ROL_ADMIN   = 3;
-const ROLES_VALIDOS = array(ROL_USUARIO, ROL_SOPORTE, ROL_ADMIN);
-const ROLES_SOPORTE = array(ROL_SOPORTE, ROL_ADMIN);
+const ROL_COLABORADOR = 1;
+const ROL_ADMIN       = 3;
+const ROLES_VALIDOS   = array(ROL_COLABORADOR, ROL_ADMIN);
 
 function usuario_actual_id(){
     return isset($_SESSION["usu_id"]) ? (int)$_SESSION["usu_id"] : null;
@@ -26,26 +26,48 @@ function rol_actual(){
     return isset($_SESSION["rol_id"]) ? (int)$_SESSION["rol_id"] : null;
 }
 
-function es_soporte(){
-    return in_array(rol_actual(), ROLES_SOPORTE, true);
-}
-
 function es_admin(){
     return rol_actual() === ROL_ADMIN;
 }
 
+/* Gestiona tickets: administrador del sistema o miembro de un área que atiende tickets.
+   Se consulta en cada petición (una vez), así un cambio de área aplica de inmediato. */
+function es_soporte(){
+    static $cache = null;
+    if ($cache === null){
+        if (usuario_actual_id() === null){
+            return false;
+        }
+        require_once(__DIR__."/../models/Area.php");
+        $cache = es_admin() || (new Area())->atiende_tickets(usuario_actual_id());
+    }
+    return $cache;
+}
+
+/* Reportes de actividad: administradores del sistema y la Responsable de
+   Gerencia y Administración (gerente general). Solo lectura. */
+const AREA_GERENCIA = "Gerencia y Administración";
+function puede_ver_reportes(){
+    static $cache = null;
+    if ($cache === null){
+        if (usuario_actual_id() === null){ return false; }
+        require_once(__DIR__."/../models/Area.php");
+        $cache = es_admin() || (new Area())->es_responsable(usuario_actual_id(), AREA_GERENCIA);
+    }
+    return $cache;
+}
+
 function rol_nombre($rol_id){
     switch ((int)$rol_id){
-        case ROL_USUARIO: return "Usuario";
-        case ROL_SOPORTE: return "Soporte";
-        case ROL_ADMIN:   return "Administrador";
-        default:          return "Desconocido";
+        case ROL_COLABORADOR: return "Colaborador";
+        case ROL_ADMIN:       return "Administrador del sistema";
+        default:              return "Desconocido";
     }
 }
 
 /* Imagen de avatar por rol (solo existen public/1.jpg y public/2.jpg) */
 function rol_imagen($rol_id){
-    return ((int)$rol_id === ROL_USUARIO) ? "1.jpg" : "2.jpg";
+    return ((int)$rol_id === ROL_COLABORADOR) ? "1.jpg" : "2.jpg";
 }
 
 /* Escapar texto para HTML */
@@ -78,14 +100,81 @@ function auth_denegar($codigo, $modo, $mensaje = null){
     exit();
 }
 
+/* Relee de la base (una vez por petición) el tipo de cuenta y si sigue activa.
+   Así un cambio hecho por el administrador aplica sin cerrar sesión, y una
+   cuenta desactivada pierde el acceso de inmediato. */
+function sesion_actualizar($modo){
+    static $hecho = false;
+    if ($hecho) { return; }
+    $hecho = true;
+    require_once(__DIR__."/../models/Usuario.php");
+    $cuenta = (new Usuario())->cuenta_activa(usuario_actual_id());
+    if ($cuenta === null){
+        $_SESSION = array();
+        auth_denegar(401, $modo);
+    }
+    $_SESSION["rol_id"]  = in_array($cuenta["rol_id"], ROLES_VALIDOS, true) ? $cuenta["rol_id"] : ROL_COLABORADOR;
+    $_SESSION["usu_nom"] = $cuenta["usu_nom"];
+    $_SESSION["usu_ape"] = $cuenta["usu_ape"];
+
+    /* Con contraseña temporal solo se permite la pantalla "Crea tu contraseña"
+       (que define PERMITE_PASS_TEMPORAL antes de pedir la sesión).
+       En "Ver como" no aplica: quien mira es el administrador. */
+    if ((int)$cuenta["usu_pass_temporal"] === 1 && !defined("PERMITE_PASS_TEMPORAL") && !viendo_como()){
+        if ($modo === "vista"){
+            header("Location:".Conectar::ruta()."view/CambiarPass/");
+            exit();
+        }
+        auth_denegar(403, $modo, "Primero debes crear tu contraseña.");
+    }
+}
+
+/* ¿La cuenta en sesión tiene todavía una contraseña temporal? */
+function pass_temporal_pendiente(){
+    require_once(__DIR__."/../models/Usuario.php");
+    $c = (new Usuario())->cuenta_activa(usuario_actual_id());
+    return $c !== null && (int)$c["usu_pass_temporal"] === 1;
+}
+
 function requiere_sesion($modo = "ajax"){
     if (usuario_actual_id() === null || rol_actual() === null){
         auth_denegar(401, $modo);
     }
+    sesion_actualizar($modo);
     /* Toda petición AJAX por POST debe traer el token CSRF de la sesión */
     if ($modo === "ajax" && es_post() && !csrf_valido()){
         auth_denegar(403, $modo, "La sesión caducó o la petición no es válida. Recarga la página.");
     }
+    /* "Ver como": solo lectura */
+    if ($modo === "ajax" && es_post() && viendo_como() && !operacion_de_lectura()){
+        auth_denegar(403, $modo, "Estás en modo \"Ver como\" (solo lectura). Vuelve a tu cuenta para hacer cambios.");
+    }
+}
+
+/* ===== "Ver como" (solo Administrador del sistema, solo lectura) =====
+   La sesión toma la identidad de la persona para mostrar exactamente lo que ve,
+   y guarda quién es el administrador real para poder volver. */
+function viendo_como(){
+    return !empty($_SESSION["ver_como_admin"]);
+}
+
+function admin_real_id(){
+    return viendo_como() ? (int)$_SESSION["ver_como_admin"] : usuario_actual_id();
+}
+
+/* Operaciones que solo leen datos: las únicas permitidas mientras se "ve como" */
+function operacion_de_lectura(){
+    $permitidas = array(
+        "ticket.php"  => array("lista", "detalle"),
+        "inicio.php"  => array("resumen"),
+        "reporte.php" => array("resumen"),
+        "usuario.php" => array("listar", "mostrar", "combo", "control_listar", "historial"),
+        "area.php"    => array("mis_areas", "catalogos", "miembros", "membresias"),
+        "cuenta.php"  => array("volver"),
+    );
+    $archivo = basename($_SERVER["SCRIPT_NAME"] ?? "");
+    $op = (string)($_GET["op"] ?? "");
+    return isset($permitidas[$archivo]) && in_array($op, $permitidas[$archivo], true);
 }
 
 function requiere_rol(array $roles, $modo = "ajax"){
@@ -95,9 +184,17 @@ function requiere_rol(array $roles, $modo = "ajax"){
     }
 }
 
+/* Atender tickets: administrador o miembro de un área que atiende */
+function requiere_soporte($modo = "ajax"){
+    requiere_sesion($modo);
+    if (!es_soporte()){
+        auth_denegar(403, $modo);
+    }
+}
+
 /*
  * Comprueba que el usuario actual puede acceder al ticket:
- * Soporte/Admin -> cualquiera que exista; Usuario -> solo los suyos.
+ * Quien atiende tickets -> cualquiera que exista; el resto -> solo los suyos.
  * $ticket es una instancia del modelo Ticket.
  */
 function requiere_acceso_ticket($ticket, $tick_id, $modo = "ajax"){

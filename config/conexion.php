@@ -34,14 +34,28 @@
 				$dbUser = env_get("DB_USER");
 				$dbPassword = env_get("DB_PASSWORD");
 
+				$opciones = array(
+					PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+					PDO::ATTR_EMULATE_PREPARES => false,   /* consultas preparadas reales en MySQL */
+				);
+				/* Base en la nube (p. ej. TiDB Cloud): conexión cifrada TLS verificando el certificado.
+				   DB_SSL=1 y DB_SSL_CA = ruta del archivo de certificados raíz (cacert.pem). */
+				if (env_get("DB_SSL", false) === "1") {
+					$ca = env_get("DB_SSL_CA", false);
+					if ($ca) {
+						$opciones[PDO::MYSQL_ATTR_SSL_CA] = $ca;
+					}
+					$opciones[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = true;
+					/* Reutilizar la conexión cifrada entre peticiones: evita negociar TLS
+					   con el servidor remoto en cada clic (la mayor parte de la demora) */
+					$opciones[PDO::ATTR_PERSISTENT] = true;
+				}
+
 				$conectar = $this->dbh = new PDO(
 					"mysql:host=" . $dbHost . ";port=" . $dbPort . ";dbname=" . $dbName . ";charset=utf8mb4",
 					$dbUser,
 					$dbPassword,
-					array(
-						PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-						PDO::ATTR_EMULATE_PREPARES => false,   /* consultas preparadas reales en MySQL */
-					)
+					$opciones
 				);
 				self::$pdo = $conectar;
 				return $conectar;
