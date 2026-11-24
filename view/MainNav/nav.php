@@ -6,11 +6,17 @@
         array("dir" => "NuevoTicket",     "texto" => "Nuevo ticket", "icono" => "nuevo",    "roles" => ROLES_VALIDOS),
         array("dir" => "ConsultarTicket", "texto" => "Tickets",      "icono" => "ticket",  "roles" => ROLES_VALIDOS),
         array("dir" => "MntUsuario",      "texto" => "Usuarios",     "icono" => "usuarios", "roles" => array(ROL_ADMIN)),
+        array("dir" => "MntArea",         "texto" => "Áreas y sedes", "icono" => "areas",    "roles" => array(ROL_ADMIN)),
     );
     /* Carpeta de la pantalla actual, para marcar la opción activa */
     $pantalla_actual = basename(dirname($_SERVER["SCRIPT_NAME"] ?? ""));
     $nombre = trim(($_SESSION["usu_nom"] ?? "")." ".($_SESSION["usu_ape"] ?? ""));
     $iniciales = mb_strtoupper(mb_substr($_SESSION["usu_nom"] ?? "", 0, 1).mb_substr($_SESSION["usu_ape"] ?? "", 0, 1));
+    /* Debajo del nombre: "Puesto · Área" (o el tipo de cuenta si aún no tiene área) */
+    require_once(__DIR__."/../../models/Area.php");
+    $subtitulo = (new Area())->resumen_usuario(usuario_actual_id());
+    if (es_admin()) { $subtitulo = "Administrador del sistema"; }
+    if ($subtitulo === "") { $subtitulo = rol_nombre(rol_actual()); }
 
 ?>
 <aside class="cp-side" id="cp_side" aria-label="Menú principal">
@@ -36,7 +42,7 @@
         <span class="cp-avatar" aria-hidden="true"><?php echo e($iniciales ?: "?"); ?></span>
         <span class="cp-side-usuario-txt">
             <strong><?php echo e($nombre); ?></strong>
-            <small><?php echo e(rol_nombre(rol_actual())); ?></small>
+            <small><?php echo e($subtitulo); ?></small>
         </span>
         <a href="../MntPerfil/" class="cp-side-accion" title="Perfil" aria-label="Perfil"><?php echo icono("perfil"); ?></a>
         <a href="../Logout/logout.php" class="cp-side-accion" title="Cerrar sesión" aria-label="Cerrar sesión"><?php echo icono("salir"); ?></a>

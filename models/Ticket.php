@@ -174,7 +174,10 @@
         public function bitacora($tick_id, $con_notas){
             $sql = parent::conexion()->prepare("
                 SELECT d.tickd_id, d.tickd_tipo, d.tickd_descrip, d.fech_crea,
-                       u.usu_id, u.usu_nom, u.usu_ape, u.rol_id
+                       u.usu_id, u.usu_nom, u.usu_ape, u.rol_id,
+                       (u.rol_id = 3 OR EXISTS (SELECT 1 FROM td_area_usuario au
+                            INNER JOIN tm_area a ON a.area_id = au.area_id
+                            WHERE au.usu_id = u.usu_id AND au.est = 1 AND a.area_atiende = 1)) AS es_ti
                 FROM td_ticketdetalle d
                 INNER JOIN tm_usuario u ON u.usu_id = d.usu_id
                 WHERE d.tick_id = ? AND d.est = 1".($con_notas ? "" : " AND d.tickd_tipo <> 'nota'")."

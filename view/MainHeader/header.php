@@ -8,4 +8,4 @@
 
 <!-- Solo para decidir qué mostrar en pantalla; el servidor NO confía en estos valores -->
 <input type="hidden" id="user_idx" value="<?php echo (int)usuario_actual_id(); ?>">
-<input type="hidden" id="rol_idx" value="<?php echo (int)rol_actual(); ?>">
+<input type="hidden" id="soporte_idx" value="<?php echo es_soporte() ? 1 : 0; ?>">

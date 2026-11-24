@@ -10,6 +10,8 @@
     $documento = new Documento();
     require_once("../models/Prioridad.php");
     $prioridad = new Prioridad();
+    require_once("../models/Area.php");
+    $area = new Area();
 
     /* ===== Adjuntos: reglas ===== */
     const ADJ_MAX_BYTES = 10 * 1024 * 1024; /* 10 MB */
@@ -232,7 +234,7 @@
                     "fecha"  => $b["fech_crea"],
                     "autor"  => trim($b["usu_nom"]." ".$b["usu_ape"]),
                     "rol"    => rol_nombre($b["rol_id"]),
-                    "es_ti"  => in_array((int)$b["rol_id"], ROLES_SOPORTE, true),
+                    "es_ti"  => (bool)$b["es_ti"],
                     "docs"   => $docs["e".(int)$b["tickd_id"]] ?? array(),
                 );
             }
@@ -311,11 +313,11 @@
 
         /* ===== Soporte y Administrador ===== */
         case "asignar":
-            requiere_rol(ROLES_SOPORTE);
+            requiere_soporte();
             $tick_id  = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
             $usu_asig = (int)($_POST["usu_asig"] ?? 0);
-            if (!$usuario->es_asignable($usu_asig)){
-                ticket_error("Solo se puede asignar a un usuario de Soporte o Administrador activo.");
+            if (!$area->es_agente($usu_asig)){
+                ticket_error("Solo se puede asignar a alguien de Informática (o un administrador del sistema) activo.");
             }
             $ticket->update_ticket_asignacion($tick_id, $usu_asig);
             $destino = $usuario->get_usuario_x_id($usu_asig);
@@ -326,7 +328,7 @@
 
         /* Autoasignarse el ticket */
         case "tomar":
-            requiere_rol(ROLES_SOPORTE);
+            requiere_soporte();
             $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
             $ticket->update_ticket_asignacion($tick_id, usuario_actual_id());
             $ticket->insert_evento($tick_id, usuario_actual_id(), nombre_sesion()." tomó el ticket");
@@ -335,7 +337,7 @@
 
         /* Posponer: queda "En espera" con el motivo en la bitácora */
         case "posponer":
-            requiere_rol(ROLES_SOPORTE);
+            requiere_soporte();
             $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
             $motivo = trim(mb_substr((string)($_POST["motivo"] ?? ""), 0, 300));
             if ($motivo === ""){
@@ -351,7 +353,7 @@
         break;
 
         case "reanudar":
-            requiere_rol(ROLES_SOPORTE);
+            requiere_soporte();
             $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
             $ticket->cambiar_estado($tick_id, "Abierto");
             $ticket->insert_evento($tick_id, usuario_actual_id(), "Ticket reanudado por ".nombre_sesion());
@@ -370,7 +372,7 @@
 
         /* ===== Soporte y Administrador: todos los tickets ===== */
         case "listar":
-            requiere_rol(ROLES_SOPORTE);
+            requiere_soporte();
             $datos=$ticket->listar_ticket();
             $data= Array();
             foreach($datos as $row){

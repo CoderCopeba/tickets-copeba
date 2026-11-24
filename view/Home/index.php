@@ -1,7 +1,8 @@
 <?php
     require_once("../../config/conexion.php");
     requiere_sesion("vista");
-    $rol = rol_actual();
+    /* Qué Inicio ve: administrador, quien atiende tickets o colaborador */
+    $vista = es_admin() ? "admin" : (es_soporte() ? "soporte" : "usuario");
     /* Animación de bienvenida solo justo después de iniciar sesión */
     $bienvenida = !empty($_SESSION["bienvenida"]);
     unset($_SESSION["bienvenida"]);
@@ -29,7 +30,7 @@
                 </a>
             </header>
 
-            <?php if ($rol === ROL_USUARIO) { ?>
+            <?php if ($vista === "usuario") { ?>
             <section class="cp-tarjeta cp-bienvenida">
                 <div>
                     <h2>Hola, <?php echo e($_SESSION["usu_nom"] ?? ""); ?></h2>
@@ -40,21 +41,21 @@
             <?php } ?>
 
             <div class="cp-seccion-titulo">
-                <h2><?php echo $rol === ROL_ADMIN ? "Resumen operativo" : ($rol === ROL_SOPORTE ? "Mi trabajo" : "Mis tickets"); ?></h2>
+                <h2><?php echo $vista === "admin" ? "Resumen operativo" : ($vista === "soporte" ? "Mi trabajo" : "Mis tickets"); ?></h2>
                 <span class="cp-fecha" id="lbl_actualizado"></span>
             </div>
 
             <!-- Indicadores: el texto y los valores dependen del rol -->
             <section class="cp-kpis cp-cargando" id="kpis">
                 <?php
-                if ($rol === ROL_ADMIN) {
+                if ($vista === "admin") {
                     $kpis = array(
                         array("total", "Total de tickets", "Histórico", "ticket", ""),
                         array("abiertos", "Tickets abiertos", "En atención", "abierto", "azul"),
                         array("cerrados", "Tickets cerrados", "", "cerrado", "gris"),
                         array("sin_asignar", "Sin asignar", "Esperan agente", "cola", "ambar"),
                     );
-                } elseif ($rol === ROL_SOPORTE) {
+                } elseif ($vista === "soporte") {
                     $kpis = array(
                         array("mis_abiertos", "Asignados a mí", "Abiertos", "abierto", "azul"),
                         array("sin_asignar", "Sin asignar", "Esperan agente", "cola", "ambar"),
@@ -82,7 +83,7 @@
                 <?php } ?>
             </section>
 
-            <?php if ($rol === ROL_ADMIN) { ?>
+            <?php if ($vista === "admin") { ?>
             <!-- Inventario: se añadirá una segunda columna cuando exista el módulo -->
             <div class="cp-rejilla">
                 <section class="cp-tarjeta cp-panel">
@@ -104,9 +105,9 @@
 
             <?php
             /* Tablas según el rol: [id, título, descripción] */
-            if ($rol === ROL_ADMIN) {
+            if ($vista === "admin") {
                 $tablas = array(array("recientes", "Tickets recientes", "Últimas solicitudes ingresadas a la mesa de ayuda"));
-            } elseif ($rol === ROL_SOPORTE) {
+            } elseif ($vista === "soporte") {
                 $tablas = array(
                     array("asignados", "Asignados a mí", "Tickets abiertos que te corresponden, del más antiguo al más reciente"),
                     array("sin_asignar", "Sin asignar", "Solicitudes que todavía no tienen agente"),

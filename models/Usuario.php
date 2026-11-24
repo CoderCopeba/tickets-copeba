@@ -195,24 +195,34 @@
             return $resultado;
         }
 
-        /* Usuarios a los que se puede asignar un ticket: Soporte y Administrador activos */
-        public function get_usuario_x_rol(){
-            $conectar= parent::conexion();
-            parent::set_names();
-            $sql="SELECT usu_id, usu_nom, usu_ape, rol_id FROM tm_usuario where est=1 and rol_id IN (2,3) ORDER BY usu_nom";
-            $sql=$conectar->prepare($sql);
+        /* Lista para Mantenimiento: cuenta, sede principal y resumen de áreas */
+        public function listar_con_areas(){
+            $sql = parent::conexion()->prepare("
+                SELECT u.usu_id, u.usu_nom, u.usu_ape, u.usu_usuario, u.usu_correo, u.rol_id,
+                       s.sede_nom,
+                       GROUP_CONCAT(DISTINCT CONCAT(a.area_nom, IF(f.fun_id = 1, ' (Responsable)', IF(f.fun_id = 2, ' (Suplente)', '')))
+                                    ORDER BY f.fun_id, a.area_nom SEPARATOR '|') AS areas
+                FROM tm_usuario u
+                LEFT JOIN tm_sede s ON s.sede_id = u.sede_id
+                LEFT JOIN td_area_usuario au ON au.usu_id = u.usu_id AND au.est = 1
+                LEFT JOIN tm_area a ON a.area_id = au.area_id AND a.est = 1
+                LEFT JOIN tm_funcion f ON f.fun_id = au.fun_id
+                WHERE u.est = 1
+                GROUP BY u.usu_id
+                ORDER BY u.usu_nom, u.usu_ape");
             $sql->execute();
-            return $resultado=$sql->fetchAll();
+            return $sql->fetchAll(PDO::FETCH_ASSOC);
         }
 
-        public function es_asignable($usu_id){
-            $conectar= parent::conexion();
-            parent::set_names();
-            $sql="SELECT COUNT(*) FROM tm_usuario WHERE usu_id = ? AND est=1 AND rol_id IN (2,3)";
-            $stmt=$conectar->prepare($sql);
-            $stmt->bindValue(1, (int)$usu_id, PDO::PARAM_INT);
-            $stmt->execute();
-            return (int)$stmt->fetchColumn() > 0;
+        public function set_sede($usu_id, $sede_id){
+            $sql = parent::conexion()->prepare("UPDATE tm_usuario SET sede_id = ? WHERE usu_id = ?");
+            $sql->execute(array($sede_id ? (int)$sede_id : null, (int)$usu_id));
+        }
+
+        public function id_por_usuario($usu_usuario){
+            $sql = parent::conexion()->prepare("SELECT usu_id FROM tm_usuario WHERE usu_usuario = ?");
+            $sql->execute(array($usu_usuario));
+            return (int)$sql->fetchColumn();
         }
 
         public function get_usuario_x_id($usu_id){

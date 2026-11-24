@@ -72,8 +72,18 @@ if (!hash_equals($pass, $pass2)) {
 $usuario->insert_usuario($nombre, $apellido, $usu_usuario, $correo, $pass, ROL_ADMIN);
 
 if ($usuario->existe_usuario($usu_usuario)) {
+    /* El administrador del sistema pertenece a Informática, en el Edificio Administrativo */
+    require_once(__DIR__."/../models/Area.php");
+    $area    = new Area();
+    $usu_id  = $usuario->id_por_usuario($usu_usuario);
+    $area_id = $area->id_area("Informática");
+    $sede_id = $area->id_sede_administrativa();
+    if ($area_id && $sede_id) {
+        $usuario->set_sede($usu_id, $sede_id);
+        $area->guardar_membresia($usu_id, $area_id, $sede_id, 3, "Administrador de sistemas");
+    }
     echo "\nListo. Ya puedes iniciar sesión con el usuario \"".$usu_usuario."\".\n";
-    echo "Las demás cuentas se crean desde Mantenimiento Usuario.\n";
+    echo "Las demás cuentas y sus áreas se crean desde la pantalla Usuarios.\n";
 } else {
     exit("No se pudo crear la cuenta. Revisa la conexión en .env.\n");
 }

@@ -1,7 +1,9 @@
 <?php
     require_once("../config/conexion.php");
     require_once("../models/Usuario.php");
+    require_once("../models/Area.php");
     $usuario = new Usuario();
+    $area = new Area();
 
     /* Ninguna operación de este controlador es pública */
     requiere_sesion("ajax");
@@ -13,7 +15,7 @@
     $op = $_GET["op"] ?? "";
 
     switch($op){
-        /* ===== Solo Administrador ===== */
+        /* ===== Solo Administrador del sistema ===== */
         case "guardaryeditar":
             requiere_rol(array(ROL_ADMIN));
 
@@ -21,14 +23,27 @@
             $usu_usuario = Usuario::normalizar_usuario($_POST["usu_usuario"] ?? "");
             $usu_pass    = (string)($_POST["usu_pass"] ?? "");
             $rol_id      = (int)($_POST["rol_id"] ?? 0);
+            $sede_id     = (int)($_POST["sede_id"] ?? 0);
             $es_alta     = ($usu_id === "");
 
+            if (trim((string)($_POST["usu_nom"] ?? "")) === "" || trim((string)($_POST["usu_ape"] ?? "")) === ""){
+                json_error("Escribe el nombre y el apellido.");
+                break;
+            }
+            if (!filter_var($_POST["usu_correo"] ?? "", FILTER_VALIDATE_EMAIL)){
+                json_error("Escribe un correo válido.");
+                break;
+            }
             if (!Usuario::usuario_valido($usu_usuario)){
                 json_error("Nombre de usuario no válido. Use de 3 a 30 caracteres: letras sin acentos (a-z), números, punto (.), guion (-) o guion bajo (_).");
                 break;
             }
             if (!in_array($rol_id, ROLES_VALIDOS, true)){
-                json_error("Rol no válido.");
+                json_error("Tipo de cuenta no válido.");
+                break;
+            }
+            if ($sede_id > 0 && !$area->existe("tm_sede", $sede_id)){
+                json_error("Sede no válida.");
                 break;
             }
             if ($es_alta && $usu_pass === ""){
@@ -36,7 +51,7 @@
                 break;
             }
             if (!$es_alta && (int)$usu_id === usuario_actual_id() && $rol_id !== ROL_ADMIN){
-                json_error("No puede quitarse a sí mismo el rol de Administrador.");
+                json_error("No puede quitarse a sí mismo la cuenta de Administrador del sistema.");
                 break;
             }
             if ($usuario->existe_usuario($usu_usuario, $es_alta ? null : $usu_id)){
@@ -46,12 +61,14 @@
 
             try {
                 if($es_alta){
-                    $usuario->insert_usuario($_POST["usu_nom"] ?? "",$_POST["usu_ape"] ?? "",$usu_usuario,$_POST["usu_correo"] ?? "",$usu_pass,$rol_id);
+                    $usuario->insert_usuario($_POST["usu_nom"],$_POST["usu_ape"],$usu_usuario,$_POST["usu_correo"],$usu_pass,$rol_id);
+                    $usu_id = $usuario->id_por_usuario($usu_usuario);
                 }
                 else {
                     /* contraseña vacía = no cambiarla */
-                    $usuario->update_usuario((int)$usu_id,$_POST["usu_nom"] ?? "",$_POST["usu_ape"] ?? "",$usu_usuario,$_POST["usu_correo"] ?? "",$usu_pass,$rol_id);
+                    $usuario->update_usuario((int)$usu_id,$_POST["usu_nom"],$_POST["usu_ape"],$usu_usuario,$_POST["usu_correo"],$usu_pass,$rol_id);
                 }
+                $usuario->set_sede((int)$usu_id, $sede_id);
             } catch (PDOException $e) {
                 /* 23000 = violación de índice único (dos altas simultáneas con el mismo usuario) */
                 if ($e->getCode() == 23000){
@@ -62,39 +79,25 @@
                 }
                 break;
             }
-            echo json_encode(array("status" => "ok"));
+            echo json_encode(array("status" => "ok", "usu_id" => (int)$usu_id));
             break;
 
+        /* Lista para la tabla: texto plano; la vista lo pinta con .text() */
         case "listar":
             requiere_rol(array(ROL_ADMIN));
-            $datos=$usuario->get_usuario();
-            $data= Array();
-            foreach($datos as $row){
-                $sub_array = array();
-                $sub_array[] = e($row["usu_nom"]);
-                $sub_array[] = e($row["usu_ape"]);
-                $sub_array[] = e($row["usu_usuario"] ?? "");
-                $sub_array[] = e($row["usu_correo"]);
-
-                switch ((int)$row["rol_id"]){
-                    case ROL_USUARIO: $sub_array[] = '<span class="label label-pill label-success">Usuario</span>'; break;
-                    case ROL_SOPORTE: $sub_array[] = '<span class="label label-pill label-info">Soporte</span>'; break;
-                    case ROL_ADMIN:   $sub_array[] = '<span class="label label-pill label-danger">Administrador</span>'; break;
-                    default:          $sub_array[] = '<span class="label label-pill label-default">Desconocido</span>';
-                }
-
-                $id = (int)$row["usu_id"];
-                $sub_array[] = '<button type="button" onClick="editar('.$id.');"  id="'.$id.'" class="btn btn-inline btn-warning btn-sm ladda-button"><i class="fa fa-edit"></i></button>';
-                $sub_array[] = '<button type="button" onClick="eliminar('.$id.');"  id="'.$id.'" class="btn btn-inline btn-danger btn-sm ladda-button"><i class="fa fa-trash"></i></button>';
-                $data[] = $sub_array;
+            $data = array();
+            foreach($usuario->listar_con_areas() as $row){
+                $data[] = array(
+                    "id"      => (int)$row["usu_id"],
+                    "nombre"  => trim($row["usu_nom"]." ".$row["usu_ape"]),
+                    "usuario" => $row["usu_usuario"] ?? "",
+                    "correo"  => $row["usu_correo"],
+                    "sede"    => $row["sede_nom"] ?? "",
+                    "areas"   => $row["areas"] ? explode("|", $row["areas"]) : array(),
+                    "admin"   => (int)$row["rol_id"] === ROL_ADMIN,
+                );
             }
-
-            $results = array(
-                "sEcho"=>1,
-                "iTotalRecords"=>count($data),
-                "iTotalDisplayRecords"=>count($data),
-                "aaData"=>$data);
-            echo json_encode($results);
+            echo json_encode(array("data" => $data));
             break;
 
         case "eliminar":
@@ -108,36 +111,30 @@
             echo json_encode(array("status" => "ok"));
             break;
 
-        case "mostrar";
+        case "mostrar":
             requiere_rol(array(ROL_ADMIN));
-            $datos=$usuario->get_usuario_x_id((int)($_POST["usu_id"] ?? 0));
-            if(is_array($datos)==true and count($datos)>0){
-                $output = array();
-                foreach($datos as $row)
-                {
-                    /* usu_pass NUNCA se devuelve */
-                    $output["usu_id"] = $row["usu_id"];
-                    $output["usu_nom"] = $row["usu_nom"];
-                    $output["usu_ape"] = $row["usu_ape"];
-                    $output["usu_usuario"] = $row["usu_usuario"] ?? "";
-                    $output["usu_correo"] = $row["usu_correo"];
-                    $output["rol_id"] = $row["rol_id"];
-                }
-                echo json_encode($output);
+            $datos = $usuario->get_usuario_x_id((int)($_POST["usu_id"] ?? 0));
+            if (is_array($datos) && count($datos) > 0){
+                $row = $datos[0];
+                /* usu_pass NUNCA se devuelve */
+                echo json_encode(array(
+                    "usu_id"      => (int)$row["usu_id"],
+                    "usu_nom"     => $row["usu_nom"],
+                    "usu_ape"     => $row["usu_ape"],
+                    "usu_usuario" => $row["usu_usuario"] ?? "",
+                    "usu_correo"  => $row["usu_correo"],
+                    "rol_id"      => (int)$row["rol_id"],
+                    "sede_id"     => (int)($row["sede_id"] ?? 0),
+                ));
             }
             break;
 
-        /* ===== Soporte y Administrador: combo de agentes para asignar ===== */
-        case "combo";
-            requiere_rol(ROLES_SOPORTE);
-            $datos = $usuario->get_usuario_x_rol();
-            $html = "";
-            if(is_array($datos)==true and count($datos)>0){
-                $html.= "<option label='Seleccionar'></option>";
-                foreach($datos as $row)
-                {
-                    $html.= "<option value='".(int)$row['usu_id']."'>".e($row['usu_nom'])."</option>";
-                }
+        /* ===== Quien atiende tickets: lista de agentes para asignar ===== */
+        case "combo":
+            requiere_soporte();
+            $html = "<option value=''>Seleccionar</option>";
+            foreach ($area->agentes() as $row){
+                $html .= "<option value='".(int)$row["usu_id"]."'>".e(trim($row["usu_nom"]." ".$row["usu_ape"]))."</option>";
             }
             echo $html;
             break;

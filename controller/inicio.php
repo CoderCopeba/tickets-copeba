@@ -9,15 +9,14 @@
 
     switch ($_GET["op"] ?? "") {
         case "resumen":
-            $rol = rol_actual();
-            if ($rol === ROL_ADMIN) {
+            if (es_admin()) {
                 $datos = $inicio->resumen_admin();
-            } elseif ($rol === ROL_SOPORTE) {
+            } elseif (es_soporte()) {
                 $datos = $inicio->resumen_soporte(usuario_actual_id());
             } else {
                 $datos = $inicio->resumen_usuario(usuario_actual_id());
             }
-            $datos["rol"] = $rol;
+            $datos["vista"] = es_admin() ? "admin" : (es_soporte() ? "soporte" : "usuario");
             echo json_encode($datos);
             break;
 

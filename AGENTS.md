@@ -32,8 +32,12 @@ Que la base esté vacía o no exista nunca significa que falte un módulo.
    `instalacion-inicial` salvo que el usuario lo pida. Los cambios llegan a `main` solo
    mediante Pull Request revisado por otra persona del equipo.
 2. **No crees módulos que ya existen.** El sistema YA tiene: login, usuarios
-   (`tm_usuario`, `models/Usuario.php`, `view/MntUsuario`), roles (`tm_rol`: 1 Usuario,
-   2 Soporte, 3 Administrador), tickets, categorías, adjuntos y correo.
+   (`tm_usuario`, `models/Usuario.php`, `view/MntUsuario`), tipos de cuenta (`tm_rol`: 1 Colaborador,
+   3 Administrador del sistema), áreas y sedes (`tm_area`, `tm_sede`, `td_area_usuario`,
+   `models/Area.php`, `view/MntArea`), tickets, categorías, prioridades, adjuntos y correo.
+   **Los permisos de trabajo vienen del área** (modelo tipo Canvas): quien pertenece a un
+   área que atiende tickets (Informática) los gestiona. Usa `es_soporte()`, `es_admin()`,
+   `requiere_soporte()`; no compares números de rol a mano.
    **No generes tablas, modelos ni pantallas de usuarios nuevas.**
 3. **La base de datos se define en `docs/bd_copeba_tickets.sql`.** No inventes otro
    esquema ni renombres tablas o columnas. Si un cambio necesita tocar la base, escríbelo

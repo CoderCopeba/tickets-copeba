@@ -5,6 +5,7 @@
      Copeba.aviso(texto) / .error(texto) mensaje con botón "Entendido"
      Copeba.confirmar(texto, fn, {peligro:true})
      Copeba.pedirTexto(texto, ayuda, fn)  pide un texto obligatorio (motivo, etc.)
+     Copeba.dialogo(id) / (id, false)     abre / cierra un <dialog class="cp-dialogo">
      Copeba.enviar(url, datos, msgError) POST que espera {status:"ok"} (acepta FormData)
      Copeba.leer(respuesta)              JSON seguro (devuelve null si no es JSON)
      Copeba.tabla(selector, url, datos)  DataTable con la configuración común
@@ -76,6 +77,30 @@ var Copeba = (function ($) {
             alAceptar($.trim(valor));
         });
     }
+
+    /* Ventanas <dialog>: se abren con show() (no showModal) para que las alertas
+       queden por encima; el fondo oscuro lo pone la clase del body. Esc cierra. */
+    function dialogo(id, abrir) {
+        var d = document.getElementById(id);
+        if (!d) { return; }
+        if (abrir === false) { if (d.open) { d.close(); } return; }
+        if (!d.dataset.cpCierre) {          /* "close" no burbujea: se engancha una vez */
+            d.dataset.cpCierre = '1';
+            d.addEventListener('close', function () {
+                if (!$('dialog.cp-dialogo[open]').length) { $('body').removeClass('cp-con-dialogo'); }
+            });
+        }
+        if (!d.open) { d.show(); }
+        $('body').addClass('cp-con-dialogo');
+        var $f = $(d).find('input:not([type=hidden]),select,textarea').first();
+        if ($f.length) { $f.trigger('focus'); }
+    }
+    $(document).on('keydown', function (e) {
+        if (e.key === 'Escape' && !$('.sweet-alert.visible').length) {
+            var abiertos = $('dialog.cp-dialogo[open]');
+            if (abiertos.length) { abiertos.last()[0].close(); }
+        }
+    });
 
     /* ---------- Peticiones al servidor ---------- */
     function leer(respuesta) {
@@ -224,7 +249,7 @@ var Copeba = (function ($) {
     }
 
     return {
-        exito: exito, aviso: aviso, error: error, confirmar: confirmar, pedirTexto: pedirTexto,
+        exito: exito, aviso: aviso, error: error, confirmar: confirmar, pedirTexto: pedirTexto, dialogo: dialogo,
         leer: leer, enviar: enviar,
         tabla: tabla, editor: editor,
         param: param, folio: folio, fecha: fecha, hora: hora, iniciales: iniciales, estado: estado

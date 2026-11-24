@@ -523,3 +523,57 @@ select.cp-control {
     .cp-encabezado-izq { align-items: flex-start; flex-direction: column; gap: 10px; }
     .cp-encabezado-acciones { justify-content: flex-start; width: 100%; }
 }
+
+/* ==========================================================================
+   Mantenimiento (usuarios, áreas): tablas, etiquetas y ventanas <dialog>
+   ========================================================================== */
+.cp-der { text-align: right; }
+.cp-bloque { display: block; }
+.cp-ayuda { display: block; margin-top: 5px; font-size: 12px; color: var(--cp-texto-suave); }
+.cp-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.cp-chip + .cp-chip { margin-left: 4px; }
+.cp-chips .cp-chip + .cp-chip { margin-left: 0; }
+.cp-buscar { max-width: 320px; height: 38px; }
+.cp-acciones-fila { white-space: nowrap; }
+.cp-acciones-fila .cp-btn + .cp-btn { margin-left: 4px; }
+.cp-btn-peligro:hover { border-color: var(--cp-rojo); color: var(--cp-rojo); }
+.cp-check { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; font-weight: 400; cursor: pointer; }
+.cp-check input { width: 16px; height: 16px; accent-color: var(--cp-verde-oscuro); }
+
+.cp-dialogo {
+    position: fixed;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    width: min(560px, calc(100% - 32px));
+    max-height: calc(100vh - 48px);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 14px;
+    background: #fff;
+    color: var(--cp-texto);
+    box-shadow: 0 24px 60px rgba(0, 28, 107, .28);
+    z-index: 900;
+    overflow: auto;
+}
+.cp-dialogo-ancho { width: min(760px, calc(100% - 32px)); }
+.cp-dialogo > header, .cp-dialogo form > header { padding: 20px 24px 6px; border-top: 4px solid var(--cp-verde-oscuro); }
+.cp-dialogo h2 { margin: 0; font-family: var(--cp-titulos); font-size: 18px; }
+.cp-dialogo header p { margin: 4px 0 0; font-size: 12.5px; color: var(--cp-texto-suave); }
+.cp-dialogo-cuerpo { padding: 14px 24px 6px; }
+.cp-dialogo footer, .cp-dialogo form > footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 24px 20px; border-top: 1px solid var(--cp-borde); margin-top: 10px; }
+body.cp-con-dialogo::after { content: ""; position: fixed; inset: 0; background: rgba(0, 28, 107, .32); z-index: 800; }
+
+.cp-membresias { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 8px; }
+.cp-membresias li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--cp-borde); border-radius: 9px; font-size: 13px; }
+.cp-membresia-nueva { display: grid; grid-template-columns: 1.4fr 1.3fr 1fr 1.2fr auto; gap: 8px; padding: 12px; background: #f6f3ec; border-radius: 10px; }
+.cp-lista-sedes { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font-size: 13px; }
+.cp-lista-sedes li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid #f0ece3; }
+.cp-lista-sedes li:last-child { border-bottom: 0; padding-bottom: 0; }
+
+@media (max-width: 760px) {
+    .cp-membresia-nueva { grid-template-columns: 1fr; }
+    .cp-buscar { max-width: none; }
+}
+.cp-lista-sedes-rejilla { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); column-gap: 24px; }
+.cp-lista-sedes-rejilla li:last-child { border-bottom: 1px solid #f0ece3; padding-bottom: 10px; }

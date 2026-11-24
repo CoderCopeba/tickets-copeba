@@ -1,8 +1,8 @@
-var rol_id = $('#rol_idx').val();
+var atiende = $('#soporte_idx').val() === '1';
 
 $(function () {
-    /* Usuario: solo sus tickets. Soporte/Admin: todos, y pueden asignar (el servidor lo exige igual) */
-    if (rol_id == 1) {
+    /* Colaborador: solo sus tickets. Quien atiende tickets: todos, y puede asignar (el servidor lo exige igual) */
+    if (!atiende) {
         Copeba.tabla('#ticket_data', '../../controller/ticket.php?op=listar_x_usu', {}, { ordering: false });
     } else {
         Copeba.tabla('#ticket_data', '../../controller/ticket.php?op=listar');

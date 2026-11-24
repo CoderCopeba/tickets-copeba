@@ -1,72 +1,114 @@
 <?php
-  require_once("../../config/conexion.php"); 
-  requiere_rol(array(ROL_ADMIN), "vista"); /* Fase 3: solo Administrador */
-  if(isset($_SESSION["usu_id"])){ 
+    require_once("../../config/conexion.php");
+    requiere_rol(array(ROL_ADMIN), "vista");   /* solo Administrador del sistema */
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="es">
     <?php require_once("../MainHead/head.php");?>
-	<title>Copeba · Mantenimiento Usuario</title>
+    <title>Copeba · Usuarios</title>
 </head>
 <body class="with-side-menu">
-
     <?php require_once("../MainHeader/header.php");?>
-
-    <div class="mobile-menu-left-overlay"></div>
-    
     <?php require_once("../MainNav/nav.php");?>
 
-	<!-- Contenido -->
-	<div class="page-content">
-		<div class="container-fluid">
-			<header class="section-header">
-				<div class="tbl">
-					<div class="tbl-row">
-						<div class="tbl-cell">
-							<h3>Mantenimiento Usuario</h3>
-							<ol class="breadcrumb breadcrumb-simple">
-								<li><a href="../Home/">Inicio</a></li>
-								<li class="active">Mantenimiento Usuario</li>
-							</ol>
-						</div>
-					</div>
-				</div>
-			</header>
+    <div class="page-content">
+        <div class="container-fluid">
 
-			<div class="box-typical box-typical-padding">
-				<button type="button" id="btnnuevo" class="btn btn-inline btn-primary">Nuevo Registro</button>
-				<table id="usuario_data" class="table table-bordered table-striped table-vcenter js-dataTable-full">
-					<thead>
-						<tr>
-							<th style="width: 10%;">Nombre</th>
-							<th style="width: 10%;">Apellido</th>
-							<th style="width: 10%;">Usuario</th>
-							<th class="d-none d-sm-table-cell" style="width: 35%;">Correo</th>
-							<th class="d-none d-sm-table-cell" style="width: 5%;">Rol</th>
-							<th class="text-center" style="width: 5%;"></th>
-							<th class="text-center" style="width: 5%;"></th>
-						</tr>
-					</thead>
-					<tbody>
+            <header class="cp-encabezado">
+                <div>
+                    <small>Administración del sistema · Copeba, R.L.</small>
+                    <h1>Usuarios</h1>
+                </div>
+                <button type="button" class="cp-btn cp-btn-primario" id="btn_nuevo"><?php echo icono("mas", 14, 2.6); ?> Nuevo usuario</button>
+            </header>
 
-					</tbody>
-				</table>
-			</div>
+            <div class="cp-seccion-titulo">
+                <div>
+                    <h2>Personal con acceso</h2>
+                    <p>El área define qué ve y hace cada persona. "Administrador del sistema" es solo para Informática.</p>
+                </div>
+                <input type="search" class="cp-control cp-buscar" id="buscar" placeholder="Buscar por nombre, usuario, área o sede…" aria-label="Buscar usuario">
+            </div>
 
-		</div>
-	</div>
-	<!-- Contenido -->
+            <div class="cp-tarjeta cp-tabla-caja">
+                <table class="cp-tabla">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Usuario</th>
+                            <th>Sede</th>
+                            <th>Áreas</th>
+                            <th>Cuenta</th>
+                            <th class="cp-der">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usuarios"><tr><td colspan="6" class="cp-vacio">Cargando…</td></tr></tbody>
+                </table>
+            </div>
 
-	<?php require_once("modalmantenimiento.php");?>
+        </div>
+    </div>
 
-	<?php require_once("../MainJs/js.php");?>
-	
-	<script type="text/javascript" src="mntusuario.js"></script>
+    <!-- Alta / edición de usuario -->
+    <dialog class="cp-dialogo" id="dlg_usuario" aria-labelledby="dlg_usuario_titulo">
+        <form id="usuario_form" method="dialog" novalidate>
+            <header><h2 id="dlg_usuario_titulo">Nuevo usuario</h2></header>
+            <div class="cp-dialogo-cuerpo">
+                <input type="hidden" id="usu_id" name="usu_id">
+                <div class="cp-campos-2">
+                    <div class="cp-campo"><label for="usu_nom">Nombre</label><input class="cp-control" id="usu_nom" name="usu_nom" maxlength="150" required></div>
+                    <div class="cp-campo"><label for="usu_ape">Apellido</label><input class="cp-control" id="usu_ape" name="usu_ape" maxlength="150" required></div>
+                </div>
+                <div class="cp-campos-2">
+                    <div class="cp-campo">
+                        <label for="usu_usuario">Usuario</label>
+                        <input class="cp-control" id="usu_usuario" name="usu_usuario" maxlength="30" placeholder="ej. jperez" autocomplete="off" autocapitalize="none" spellcheck="false" required>
+                    </div>
+                    <div class="cp-campo"><label for="usu_correo">Correo</label><input type="email" class="cp-control" id="usu_correo" name="usu_correo" maxlength="150" required></div>
+                </div>
+                <div class="cp-campos-2">
+                    <div class="cp-campo">
+                        <label for="sede_id">Sede principal</label>
+                        <select class="cp-control" id="sede_id" name="sede_id"></select>
+                    </div>
+                    <div class="cp-campo">
+                        <label for="rol_id">Tipo de cuenta</label>
+                        <select class="cp-control" id="rol_id" name="rol_id">
+                            <option value="<?php echo ROL_COLABORADOR; ?>">Colaborador</option>
+                            <option value="<?php echo ROL_ADMIN; ?>">Administrador del sistema</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="cp-campo">
+                    <label for="usu_pass">Contraseña</label>
+                    <input type="password" class="cp-control" id="usu_pass" name="usu_pass" autocomplete="new-password">
+                    <small class="cp-ayuda" id="usu_pass_ayuda">Obligatoria para un usuario nuevo.</small>
+                </div>
+            </div>
+            <footer>
+                <button type="button" class="cp-btn cp-btn-borde" data-cerrar>Cancelar</button>
+                <button type="submit" class="cp-btn cp-btn-primario">Guardar</button>
+            </footer>
+        </form>
+    </dialog>
 
+    <!-- Áreas de una persona -->
+    <dialog class="cp-dialogo cp-dialogo-ancho" id="dlg_areas" aria-labelledby="dlg_areas_titulo">
+        <header><h2 id="dlg_areas_titulo">Áreas</h2><p>Una persona puede pertenecer a varias áreas y sedes.</p></header>
+        <div class="cp-dialogo-cuerpo">
+            <ul class="cp-membresias" id="membresias"></ul>
+            <form class="cp-membresia-nueva" id="membresia_form" novalidate>
+                <select class="cp-control" id="m_area" aria-label="Área" required></select>
+                <select class="cp-control" id="m_sede" aria-label="Sede" required></select>
+                <select class="cp-control" id="m_funcion" aria-label="Función"></select>
+                <input class="cp-control" id="m_puesto" maxlength="80" placeholder="Puesto (ej. Cajera 2)" aria-label="Puesto">
+                <button type="submit" class="cp-btn cp-btn-primario">Agregar</button>
+            </form>
+        </div>
+        <footer><button type="button" class="cp-btn cp-btn-borde" data-cerrar>Listo</button></footer>
+    </dialog>
+
+    <?php require_once("../MainJs/js.php");?>
+    <script src="mntusuario.js?v=<?php echo filemtime(__DIR__."/mntusuario.js"); ?>"></script>
 </body>
 </html>
-<?php
-  } else {
-    header("Location:".Conectar::ruta()."index.php");
-  }
-?>
