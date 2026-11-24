@@ -59,19 +59,18 @@ Que la base esté vacía o no exista nunca significa que falte un módulo.
    pueden quedar vacíos en local: entonces no se envían correos.
 3. **Base de datos.** En HeidiSQL o Workbench, conectado como `root`:
    ```sql
-   CREATE DATABASE bd_copeba_tickets CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci;
+   CREATE DATABASE bd_copeba_tickets CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
    ```
    Seleccionar `bd_copeba_tickets` y cargar/ejecutar el archivo `docs/bd_copeba_tickets.sql`
-   (crea 6 tablas, 3 roles, 4 categorías y 4 procedimientos).
+   (tablas, roles, categorías, prioridades, funciones, sedes y áreas; sin procedimientos).
+   **Si el equipo usa la base compartida en la nube (TiDB Cloud), no hace falta base local:**
+   ver `instalar/nube/LEEME.md`. No uses procedimientos almacenados ni `utf8mb4_spanish_ci`
+   (TiDB no los admite).
 4. **Cuenta MySQL de la aplicación** (la app nunca usa `root`). Como `root`, cambiando
    `CLAVE_LOCAL` por una contraseña propia, igual a `DB_PASSWORD` del `.env`:
    ```sql
    CREATE USER 'tickets_app'@'127.0.0.1' IDENTIFIED BY 'CLAVE_LOCAL';
    GRANT SELECT, INSERT, UPDATE ON bd_copeba_tickets.* TO 'tickets_app'@'127.0.0.1';
-   GRANT EXECUTE ON PROCEDURE bd_copeba_tickets.sp_d_usuario_01       TO 'tickets_app'@'127.0.0.1';
-   GRANT EXECUTE ON PROCEDURE bd_copeba_tickets.sp_i_ticketdetalle_01 TO 'tickets_app'@'127.0.0.1';
-   GRANT EXECUTE ON PROCEDURE bd_copeba_tickets.sp_l_usuario_01       TO 'tickets_app'@'127.0.0.1';
-   GRANT EXECUTE ON PROCEDURE bd_copeba_tickets.sp_l_usuario_02       TO 'tickets_app'@'127.0.0.1';
    ```
    No guardes este script con la contraseña escrita dentro del proyecto.
 5. **Primer Administrador.** La persona (no el agente) ejecuta en una terminal, desde la
@@ -113,4 +112,7 @@ quieras conservar). Si no hay script, pregunta al equipo antes de reimportar.
 - Autorización siempre en el servidor (`requiere_sesion`, `requiere_rol`,
   `requiere_acceso_ticket`); ocultar botones en la vista no basta.
 - Escapar toda salida con `e()`; HTML de usuarios pasa por `html_limpio()`.
+- **La base compartida es TiDB Cloud (compatible con MySQL)**: en `GROUP BY` incluye todas las
+  columnas no agregadas del SELECT; no uses procedimientos almacenados, triggers ni
+  `utf8mb4_spanish_ci`. Prueba las consultas nuevas también contra la nube.
 - Archivos con finales de línea CRLF.

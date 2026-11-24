@@ -1,6 +1,11 @@
 <?php
     require_once("../../config/conexion.php");
     requiere_sesion("vista");
+    /* Gerencia (no administradora ni de Informática): su Inicio son los Reportes */
+    if (puede_ver_reportes() && !es_admin() && !es_soporte()){
+        header("Location:".Conectar::ruta()."view/Reportes/");
+        exit();
+    }
     /* Qué Inicio ve: administrador, quien atiende tickets o colaborador */
     $vista = es_admin() ? "admin" : (es_soporte() ? "soporte" : "usuario");
     /* Animación de bienvenida solo justo después de iniciar sesión */
@@ -41,7 +46,7 @@
             <?php } ?>
 
             <div class="cp-seccion-titulo">
-                <h2><?php echo $vista === "admin" ? "Resumen operativo" : ($vista === "soporte" ? "Mi trabajo" : "Mis tickets"); ?></h2>
+                <h2><?php echo $vista === "admin" ? "Panel del sistema" : ($vista === "soporte" ? "Mi trabajo" : "Mis tickets"); ?></h2>
                 <span class="cp-fecha" id="lbl_actualizado"></span>
             </div>
 
@@ -50,10 +55,10 @@
                 <?php
                 if ($vista === "admin") {
                     $kpis = array(
-                        array("total", "Total de tickets", "Histórico", "ticket", ""),
-                        array("abiertos", "Tickets abiertos", "En atención", "abierto", "azul"),
-                        array("cerrados", "Tickets cerrados", "", "cerrado", "gris"),
-                        array("sin_asignar", "Sin asignar", "Esperan agente", "cola", "ambar"),
+                        array("cuentas", "Cuentas activas", "Personal con acceso", "usuarios", ""),
+                        array("temporales", "Temporales pendientes", "Aún no crean su contraseña", "llave", "ambar"),
+                        array("sin_area", "Usuarios sin área", "Asígnales su área", "areas", "azul"),
+                        array("fuera_tiempo", "Tickets fuera de tiempo", "Superaron su SLA", "cola", "gris"),
                     );
                 } elseif ($vista === "soporte") {
                     $kpis = array(
@@ -84,21 +89,39 @@
             </section>
 
             <?php if ($vista === "admin") { ?>
-            <!-- Inventario: se añadirá una segunda columna cuando exista el módulo -->
-            <div class="cp-rejilla">
+            <!-- Panel del sistema: qué requiere atención (la actividad está en Reportes) -->
+            <div class="cp-rejilla dos cp-panel-admin">
                 <section class="cp-tarjeta cp-panel">
                     <div class="cp-seccion-titulo">
-                        <div>
-                            <h2>Tickets por categoría</h2>
-                            <p>Distribución histórica de solicitudes registradas</p>
-                        </div>
-                        <span class="cp-chip" id="lbl_registros"></span>
-                    </div>
-                    <div class="cp-barras" id="barras"></div>
-                    <div class="cp-panel-pie">
-                        <span id="lbl_mayor"></span>
+                        <div><h2>Tickets fuera de tiempo</h2><p>Abiertos que ya superaron su tiempo objetivo</p></div>
                         <a class="cp-enlace" href="../ConsultarTicket/">Ver tickets</a>
                     </div>
+                    <ul class="cp-lista-atencion" id="lista_fuera_tiempo"></ul>
+                </section>
+                <section class="cp-tarjeta cp-panel">
+                    <div class="cp-seccion-titulo">
+                        <div><h2>Accesos rápidos</h2><p>Administración del sistema</p></div>
+                    </div>
+                    <div class="cp-accesos">
+                        <a href="../MntUsuario/"><?php echo icono("usuarios", 20, 1.8); ?><span>Usuarios</span></a>
+                        <a href="../ControlUsuarios/"><?php echo icono("llave", 20, 1.8); ?><span>Cuentas</span></a>
+                        <a href="../MntArea/"><?php echo icono("areas", 20, 1.8); ?><span>Áreas y sedes</span></a>
+                        <a href="../Reportes/"><?php echo icono("reportes", 20, 1.8); ?><span>Reportes</span></a>
+                    </div>
+                </section>
+                <section class="cp-tarjeta cp-panel">
+                    <div class="cp-seccion-titulo">
+                        <div><h2>Usuarios sin área</h2><p>No verán su área hasta que se les asigne</p></div>
+                        <a class="cp-enlace" href="../MntUsuario/">Ir a Usuarios</a>
+                    </div>
+                    <ul class="cp-lista-atencion" id="lista_sin_area"></ul>
+                </section>
+                <section class="cp-tarjeta cp-panel">
+                    <div class="cp-seccion-titulo">
+                        <div><h2>Cuentas y áreas</h2><p>Temporales vencidas y áreas activas sin integrantes</p></div>
+                        <a class="cp-enlace" href="../ControlUsuarios/">Ir a Cuentas</a>
+                    </div>
+                    <ul class="cp-lista-atencion" id="lista_cuentas_areas"></ul>
                 </section>
             </div>
             <?php } ?>
@@ -106,7 +129,7 @@
             <?php
             /* Tablas según el rol: [id, título, descripción] */
             if ($vista === "admin") {
-                $tablas = array(array("recientes", "Tickets recientes", "Últimas solicitudes ingresadas a la mesa de ayuda"));
+                $tablas = array();   /* la lista completa está en Tickets */
             } elseif ($vista === "soporte") {
                 $tablas = array(
                     array("asignados", "Asignados a mí", "Tickets abiertos que te corresponden, del más antiguo al más reciente"),

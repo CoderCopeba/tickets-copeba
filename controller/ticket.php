@@ -145,7 +145,9 @@
             }
 
             /* 2) Crear ticket: el creador SIEMPRE es el usuario de la sesión */
-            $datos=$ticket->insert_ticket(usuario_actual_id(), $cat_id, $tick_titulo, $tick_descrip, $prio_id);
+            $origen = $area->area_principal(usuario_actual_id());
+            $datos=$ticket->insert_ticket(usuario_actual_id(), $cat_id, $tick_titulo, $tick_descrip, $prio_id,
+                                          $origen["area_id"] ?? null, $origen["sede_id"] ?? null);
 
             /* 3) Guardar adjuntos */
             if (is_array($datos) && count($datos) > 0){

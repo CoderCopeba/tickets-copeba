@@ -24,3 +24,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.log
+
+# Credenciales de conexión (nube y local)
+*.cnf

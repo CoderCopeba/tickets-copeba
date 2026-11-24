@@ -92,6 +92,43 @@
         Copeba.exito('Sesión iniciada correctamente', nombre ? '¡Bienvenido, ' + nombre + '!' : '¡Bienvenido!');
     }
 
+    /* ---------- Panel del sistema (Administrador) ---------- */
+    function lista(sel, items, vacio, fila) {
+        var $l = $(sel).empty();
+        if (!items || !items.length) {
+            $l.append($('<li class="cp-atencion-ok">').text(vacio));
+            return;
+        }
+        $.each(items, function (_, x) { $l.append(fila(x)); });
+    }
+
+    function horas(h) {
+        h = Number(h);
+        return h >= 48 ? Math.floor(h / 24) + ' días' : h + ' h';
+    }
+
+    function pintarPanelAdmin(d) {
+        lista('#lista_fuera_tiempo', d.fuera_tiempo, 'Ningún ticket fuera de tiempo. ¡Bien!', function (t) {
+            return $('<li>').append(
+                $('<a class="cp-link-tabla">').attr('href', '../DetalleTicket/?ID=' + encodeURIComponent(t.tick_id))
+                    .text(Copeba.folio(t.tick_id) + ' · ' + t.tick_titulo),
+                $('<span class="cp-lista-meta">').append(
+                    $('<span class="cp-prioridad">').addClass('p' + t.prio_id).text(t.prio_nom),
+                    $('<span>').text('vencido hace ' + horas(t.horas_vencido) + ' · ' + (t.asignado || 'sin asignar'))
+                )
+            );
+        });
+        lista('#lista_sin_area', d.sin_area, 'Todas las cuentas tienen área.', function (u) {
+            return $('<li>').append($('<strong>').text(u.nombre), $('<span class="cp-lista-meta cp-mono">').text(u.usuario));
+        });
+        var cuentasAreas = [];
+        $.each(d.vencidas || [], function (_, u) { cuentasAreas.push({ t: 'Temporal vencida: ' + u.nombre, m: u.usuario }); });
+        $.each(d.areas_vacias || [], function (_, a) { cuentasAreas.push({ t: 'Área sin integrantes: ' + a.nombre, m: 'Áreas y sedes' }); });
+        lista('#lista_cuentas_areas', cuentasAreas, 'Sin temporales vencidas ni áreas vacías.', function (x) {
+            return $('<li>').append($('<strong>').text(x.t), $('<span class="cp-lista-meta">').text(x.m));
+        });
+    }
+
     $(function () {
         bienvenida();
         $.post('../../controller/inicio.php?op=resumen')
@@ -103,6 +140,7 @@
                 pintarTabla('recientes', datos.recientes, 'Todavía no hay tickets.');
                 pintarTabla('asignados', datos.asignados, 'No tienes tickets abiertos asignados.');
                 pintarTabla('sin_asignar', datos.sin_asignar, 'No hay tickets pendientes de asignar.');
+                if (datos.vista === 'admin') { pintarPanelAdmin(datos); }
             })
             .fail(function () {
                 $('[data-tabla] ').html('<tr><td colspan="7" class="cp-vacio">No se pudo cargar la información. Recarga la página.</td></tr>');

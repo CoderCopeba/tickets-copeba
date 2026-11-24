@@ -44,6 +44,19 @@ function es_soporte(){
     return $cache;
 }
 
+/* Reportes de actividad: administradores del sistema y la Responsable de
+   Gerencia y Administración (gerente general). Solo lectura. */
+const AREA_GERENCIA = "Gerencia y Administración";
+function puede_ver_reportes(){
+    static $cache = null;
+    if ($cache === null){
+        if (usuario_actual_id() === null){ return false; }
+        require_once(__DIR__."/../models/Area.php");
+        $cache = es_admin() || (new Area())->es_responsable(usuario_actual_id(), AREA_GERENCIA);
+    }
+    return $cache;
+}
+
 function rol_nombre($rol_id){
     switch ((int)$rol_id){
         case ROL_COLABORADOR: return "Colaborador";
@@ -105,8 +118,9 @@ function sesion_actualizar($modo){
     $_SESSION["usu_ape"] = $cuenta["usu_ape"];
 
     /* Con contraseña temporal solo se permite la pantalla "Crea tu contraseña"
-       (que define PERMITE_PASS_TEMPORAL antes de pedir la sesión). */
-    if ((int)$cuenta["usu_pass_temporal"] === 1 && !defined("PERMITE_PASS_TEMPORAL")){
+       (que define PERMITE_PASS_TEMPORAL antes de pedir la sesión).
+       En "Ver como" no aplica: quien mira es el administrador. */
+    if ((int)$cuenta["usu_pass_temporal"] === 1 && !defined("PERMITE_PASS_TEMPORAL") && !viendo_como()){
         if ($modo === "vista"){
             header("Location:".Conectar::ruta()."view/CambiarPass/");
             exit();
@@ -131,6 +145,36 @@ function requiere_sesion($modo = "ajax"){
     if ($modo === "ajax" && es_post() && !csrf_valido()){
         auth_denegar(403, $modo, "La sesión caducó o la petición no es válida. Recarga la página.");
     }
+    /* "Ver como": solo lectura */
+    if ($modo === "ajax" && es_post() && viendo_como() && !operacion_de_lectura()){
+        auth_denegar(403, $modo, "Estás en modo \"Ver como\" (solo lectura). Vuelve a tu cuenta para hacer cambios.");
+    }
+}
+
+/* ===== "Ver como" (solo Administrador del sistema, solo lectura) =====
+   La sesión toma la identidad de la persona para mostrar exactamente lo que ve,
+   y guarda quién es el administrador real para poder volver. */
+function viendo_como(){
+    return !empty($_SESSION["ver_como_admin"]);
+}
+
+function admin_real_id(){
+    return viendo_como() ? (int)$_SESSION["ver_como_admin"] : usuario_actual_id();
+}
+
+/* Operaciones que solo leen datos: las únicas permitidas mientras se "ve como" */
+function operacion_de_lectura(){
+    $permitidas = array(
+        "ticket.php"  => array("lista", "detalle"),
+        "inicio.php"  => array("resumen"),
+        "reporte.php" => array("resumen"),
+        "usuario.php" => array("listar", "mostrar", "combo", "control_listar", "historial"),
+        "area.php"    => array("mis_areas", "catalogos", "miembros", "membresias"),
+        "cuenta.php"  => array("volver"),
+    );
+    $archivo = basename($_SERVER["SCRIPT_NAME"] ?? "");
+    $op = (string)($_GET["op"] ?? "");
+    return isset($permitidas[$archivo]) && in_array($op, $permitidas[$archivo], true);
 }
 
 function requiere_rol(array $roles, $modo = "ajax"){

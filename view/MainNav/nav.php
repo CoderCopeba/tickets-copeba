@@ -5,6 +5,7 @@
         array("dir" => "Home",            "texto" => "Inicio",       "icono" => "inicio",   "roles" => ROLES_VALIDOS),
         array("dir" => "NuevoTicket",     "texto" => "Nuevo ticket", "icono" => "nuevo",    "roles" => ROLES_VALIDOS),
         array("dir" => "ConsultarTicket", "texto" => "Tickets",      "icono" => "ticket",  "roles" => ROLES_VALIDOS),
+        array("dir" => "Reportes",        "texto" => "Reportes",     "icono" => "reportes", "reportes" => true),
         array("dir" => "ControlUsuarios", "texto" => "Cuentas",      "icono" => "llave",    "soporte" => true),
         array("dir" => "MntUsuario",      "texto" => "Usuarios",     "icono" => "usuarios", "roles" => array(ROL_ADMIN)),
         array("dir" => "MntArea",         "texto" => "Áreas y sedes", "icono" => "areas",    "roles" => array(ROL_ADMIN)),
@@ -30,7 +31,7 @@
     </a>
 
     <nav class="cp-side-menu">
-        <?php foreach ($menu as $opcion) { if (isset($opcion["soporte"]) ? es_soporte() : in_array(rol_actual(), $opcion["roles"], true)) {
+        <?php foreach ($menu as $opcion) { if (isset($opcion["reportes"]) ? puede_ver_reportes() : (isset($opcion["soporte"]) ? es_soporte() : in_array(rol_actual(), $opcion["roles"], true))) {
             $activa = ($pantalla_actual === $opcion["dir"]); ?>
         <a href="../<?php echo e($opcion["dir"]); ?>/" class="<?php echo $activa ? "activa" : ""; ?>"<?php echo $activa ? ' aria-current="page"' : ""; ?>>
             <?php echo icono($opcion["icono"]); ?>

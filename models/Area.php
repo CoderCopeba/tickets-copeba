@@ -41,6 +41,24 @@ class Area extends Conectar {
         return false;
     }
 
+    /* Área y sede principales de una persona (Responsable antes que Colaborador);
+       si no tiene área, solo su sede principal */
+    public function area_principal($usu_id){
+        $f = $this->todos("
+            SELECT au.area_id, au.sede_id FROM td_area_usuario au
+            INNER JOIN tm_area a ON a.area_id = au.area_id AND a.est = 1
+            WHERE au.usu_id = ? AND au.est = 1 ORDER BY au.fun_id, au.au_id LIMIT 1", array((int)$usu_id));
+        if ($f) { return $f[0]; }
+        return array("area_id" => null, "sede_id" => $this->valor("SELECT sede_id FROM tm_usuario WHERE usu_id = ?", array((int)$usu_id)) ?: null);
+    }
+
+    /* ¿Es Responsable de esa área (en cualquier sede)? */
+    public function es_responsable($usu_id, $area_nom){
+        return (int)$this->valor("
+            SELECT COUNT(*) FROM td_area_usuario au INNER JOIN tm_area a ON a.area_id = au.area_id
+            WHERE au.usu_id = ? AND au.est = 1 AND au.fun_id = 1 AND a.area_nom = ?", array((int)$usu_id, $area_nom)) > 0;
+    }
+
     public function id_area($nombre){
         return (int)$this->valor("SELECT area_id FROM tm_area WHERE area_nom = ? AND est = 1", array($nombre));
     }

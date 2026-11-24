@@ -39,7 +39,7 @@
 
     Copeba.listado = function (contenedor, o) {
         var filas = [], visibles = [], pagina = 1, pestana = 0, cargado = false;
-        var porPagina = leerPreferencia(o.id || 'general', o.porPagina || 25);
+        var porPagina = leerPreferencia(o.id || 'general', o.porPagina || 10);
         var $c = $(contenedor).addClass('cp-tarjeta cp-listado').empty();
 
         /* ---- Encabezado ---- */

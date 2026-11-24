@@ -7,13 +7,16 @@ var ICONO_USUARIOS = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none
 $(function () {
     $.post('../../controller/area.php?op=catalogos').done(function (r) {
         catalogos = Copeba.leer(r) || catalogos;
-        llenarSelect('#sede_id', catalogos.sedes, 'sede_id', 'sede_nom', 'Sin sede');
+        var areas = catalogos.areas.map(function (a) {
+            return { area_id: a.area_id, nombre: (a.padre_nom ? a.padre_nom + ' › ' : '') + a.area_nom + (a.area_estado === 'planificada' ? ' (planificada)' : '') };
+        });
+        llenarSelect('#sede_id', catalogos.sedes, 'sede_id', 'sede_nom', 'Elige la agencia o sede');
         llenarSelect('#m_sede', catalogos.sedes, 'sede_id', 'sede_nom');
         llenarSelect('#m_funcion', catalogos.funciones, 'fun_id', 'fun_nom');
-        llenarSelect('#m_area', catalogos.areas.map(function (a) {
-            return { area_id: a.area_id, nombre: (a.padre_nom ? a.padre_nom + ' › ' : '') + a.area_nom + (a.area_estado === 'planificada' ? ' (planificada)' : '') };
-        }), 'area_id', 'nombre');
-        $('#m_funcion').val('3');
+        llenarSelect('#m_area', areas, 'area_id', 'nombre');
+        llenarSelect('#area_id', areas, 'area_id', 'nombre', 'Elige el área');
+        llenarSelect('#fun_id', catalogos.funciones, 'fun_id', 'fun_nom');
+        $('#m_funcion, #fun_id').val('3');
     });
 
     lista = Copeba.listado('#lista_usuarios', {
@@ -42,7 +45,11 @@ $(function () {
             } },
             { titulo: 'Cuenta', render: function (u) { return u.admin ? $('<span class="cp-estado cerrado">').text('Administrador') : $('<span class="cp-suave">').text('Colaborador'); } },
             { titulo: 'Acciones', clase: 'cp-der cp-acciones-fila', render: function (u) {
-                return $('<span>').append(boton('areas', u.id, 'Áreas'), boton('editar', u.id, 'Editar'), boton('eliminar', u.id, 'Eliminar', true));
+                return $('<span class="cp-iconos-fila">').append(
+                    u.admin ? null : botonIcono('vercomo', u.id, 'Ver como esta persona (solo lectura)', ICONOS.vercomo),
+                    botonIcono('areas', u.id, 'Áreas de trabajo', ICONOS.areas),
+                    botonIcono('editar', u.id, 'Editar', ICONOS.editar),
+                    botonIcono('eliminar', u.id, 'Desactivar', ICONOS.eliminar, true));
             } }
         ],
         vacio: 'No hay usuarios.',
@@ -63,7 +70,7 @@ $(function () {
     $('#membresias').on('click', 'button', function () { quitarMembresia($(this).data('id')); });
     $('#lista_usuarios').on('click', 'button[data-accion]', function () {
         var id = $(this).data('id');
-        ({ editar: abrirUsuario, areas: abrirAreas, eliminar: eliminar })[$(this).data('accion')](id);
+        ({ editar: abrirUsuario, areas: abrirAreas, eliminar: eliminar, vercomo: verComo })[$(this).data('accion')](id);
     });
     $('dialog').on('click', '[data-cerrar]', function () { this.closest('dialog').close(); });
     $('#dlg_areas').on('close', cargar);   /* refresca la tabla al terminar */
@@ -75,15 +82,35 @@ function llenarSelect(sel, datos, id, texto, vacio) {
     $.each(datos, function (_, x) { $s.append($('<option>').val(x[id]).text(x[texto])); });
 }
 
+/* "Ver como": entra a la vista de la persona en solo lectura (queda en su historial) */
+function verComo(id) {
+    var u = lista.filas().filter(function (x) { return x.id === id; })[0];
+    Copeba.confirmar('¿Ver el sistema como ' + (u ? u.nombre : 'esta persona') + '? Verás sus pantallas en modo solo lectura; quedará registrado.', function () {
+        Copeba.enviar('../../controller/cuenta.php?op=ver_como', { usu_id: id }, 'No se pudo entrar en "Ver como".')
+            .done(function () { location.href = '../Home/'; });
+    });
+}
+
 function cargar() {
     $.post('../../controller/usuario.php?op=listar').done(function (r) {
         lista.datos((Copeba.leer(r) || {}).data || []);
     });
 }
 
-function boton(accion, id, texto, peligro) {
-    return $('<button type="button" class="cp-btn cp-btn-borde cp-btn-chico">')
-        .toggleClass('cp-btn-peligro', !!peligro).attr({ 'data-accion': accion, 'data-id': id }).text(texto);
+function svg(trazo) {
+    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + trazo + '</svg>';
+}
+var ICONOS = {
+    vercomo: svg('<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>'),
+    areas: svg('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14v7M14 17.5h7"/>'),
+    editar: svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
+    eliminar: svg('<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>')
+};
+
+/* Botón compacto con icono y texto de ayuda (title + aria-label) */
+function botonIcono(accion, id, texto, icono, peligro) {
+    return $('<button type="button" class="cp-icono-btn">').toggleClass('peligro', !!peligro)
+        .attr({ 'data-accion': accion, 'data-id': id, title: texto, 'aria-label': texto }).html(icono);
 }
 
 /* ---------- Alta / edición ---------- */
@@ -92,8 +119,17 @@ function abrirUsuario(id) {
     $('#usu_id').val('');
     $('#dlg_usuario_titulo').text(id ? 'Editar usuario' : 'Nuevo usuario');
     $('#usu_pass').attr('placeholder', id ? 'Dejar vacío para no cambiar' : '');
-    $('#usu_pass_ayuda').text(id ? 'Déjala vacía para conservar la actual.' : 'Obligatoria para un usuario nuevo.');
+    $('#usu_pass_ayuda').text(id ? 'Déjala vacía para conservar la actual. Si escribes una, será temporal.' : 'Será temporal: al entrar, la persona creará la suya.');
+    /* Alta: área en el mismo paso. Edición: se muestran sus áreas actuales */
+    $('#grupo_area_alta').prop('hidden', !!id);
+    $('#grupo_area_edicion').prop('hidden', !id);
+    $('#fun_id').val('3');
     if (!id) { Copeba.dialogo('dlg_usuario'); return; }
+    var fila = lista.filas().filter(function (x) { return x.id === id; })[0];
+    var $chips = $('#areas_actuales').empty();
+    if (!fila || !fila.areas.length) { $chips.append($('<span class="cp-suave">').text('Sin área asignada')); }
+    $.each(fila ? fila.areas : [], function (_, a) { $chips.append($('<span class="cp-chip">').text(a)); });
+    $('#btn_areas_desde_editar').off('click').on('click', function () { Copeba.dialogo('dlg_usuario', false); abrirAreas(id); });
     $.post('../../controller/usuario.php?op=mostrar', { usu_id: id }).done(function (r) {
         var u = Copeba.leer(r);
         if (!u) { Copeba.error('No se pudo cargar el usuario.'); return; }
@@ -118,14 +154,14 @@ function guardar(e) {
     }
     $('#usu_usuario').val(usuario);
     if (nuevo && $('#usu_pass').val() === '') { Copeba.aviso('La contraseña es obligatoria para un usuario nuevo.'); return; }
+    if (nuevo && (!$('#sede_id').val() || !$('#area_id').val())) { Copeba.aviso('Elige la agencia o sede y el área de trabajo.'); return; }
 
     Copeba.enviar('../../controller/usuario.php?op=guardaryeditar', new FormData($('#usuario_form')[0]), 'No se pudo guardar el usuario.')
         .done(function (r) {
             Copeba.dialogo('dlg_usuario', false);
             cargar();
             if (nuevo) {
-                Copeba.exito('Ahora asígnale sus áreas.', 'Usuario creado');
-                setTimeout(function () { abrirAreas(r.usu_id); }, 1100);
+                Copeba.exito('Al entrar deberá crear su propia contraseña.', 'Usuario creado');
             } else {
                 Copeba.exito('Usuario guardado.');
             }

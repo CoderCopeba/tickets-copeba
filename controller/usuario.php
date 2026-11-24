@@ -50,6 +50,19 @@
                 json_error("La contraseña es obligatoria para un usuario nuevo.");
                 break;
             }
+            /* Alta: área de trabajo obligatoria en el mismo paso */
+            $alta_area = (int)($_POST["area_id"] ?? 0);
+            $alta_fun  = (int)($_POST["fun_id"] ?? 3);
+            if ($es_alta){
+                if ($sede_id <= 0){
+                    json_error("Elige la agencia o sede de la persona.");
+                    break;
+                }
+                if (!$area->existe("tm_area", $alta_area) || !$area->existe("tm_funcion", $alta_fun)){
+                    json_error("Elige el área y la función de la persona.");
+                    break;
+                }
+            }
             if (!$es_alta && (int)$usu_id === usuario_actual_id() && $rol_id !== ROL_ADMIN){
                 json_error("No puede quitarse a sí mismo la cuenta de Administrador del sistema.");
                 break;
@@ -69,6 +82,10 @@
                     $usuario->update_usuario((int)$usu_id,$_POST["usu_nom"],$_POST["usu_ape"],$usu_usuario,$_POST["usu_correo"],$usu_pass,$rol_id);
                 }
                 $usuario->set_sede((int)$usu_id, $sede_id);
+                if ($es_alta){
+                    $puesto = trim(mb_substr((string)($_POST["au_puesto"] ?? ""), 0, 80)) ?: null;
+                    $area->guardar_membresia((int)$usu_id, $alta_area, $sede_id, $alta_fun, $puesto);
+                }
                 /* La contraseña que pone el administrador es temporal: la persona elegirá la suya al entrar */
                 if ($usu_pass !== "" && (int)$usu_id !== usuario_actual_id()){
                     $usuario->marcar_temporal((int)$usu_id, $usu_pass, 72);

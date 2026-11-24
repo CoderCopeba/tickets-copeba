@@ -1,6 +1,7 @@
 /* Control de cuentas (Informática): estado de contraseñas y contraseñas temporales.
    Las contraseñas nunca llegan al navegador; solo la temporal recién generada, una vez. */
 var cuentas = [];
+var esAdmin = $('#admin_idx').val() === '1';
 var ahora = null;
 var lista;
 var ICONO_LLAVE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 9.2-9.2M17 6l3 3M14.5 8.5l2 2"/></svg>';
@@ -9,7 +10,8 @@ var EVENTOS = {
     temporal_generada: 'Temporal generada',
     pass_creada: 'Creó su contraseña',
     pass_cambiada: 'Cambió su contraseña',
-    cuenta_creada: 'Cuenta creada'
+    cuenta_creada: 'Cuenta creada',
+    vista_como: 'Un administrador vio su cuenta'
 };
 
 $(function () {
@@ -43,6 +45,7 @@ $(function () {
             } },
             { titulo: 'Acciones', clase: 'cp-der cp-acciones-fila', render: function (c) {
                 return $('<span>').append(
+                    (esAdmin && !c.admin) ? $('<button type="button" class="cp-btn cp-btn-borde cp-btn-chico">').attr({ 'data-accion': 'vercomo', 'data-id': c.id, title: 'Ver el sistema como esta persona (solo lectura)' }).text('Ver como') : null,
                     $('<button type="button" class="cp-btn cp-btn-borde cp-btn-chico">').attr({ 'data-accion': 'historial', 'data-id': c.id }).text('Historial'),
                     $('<button type="button" class="cp-btn cp-btn-primario cp-btn-chico">').attr({ 'data-accion': 'temporal', 'data-id': c.id }).text('Contraseña temporal'));
             } }
@@ -62,12 +65,24 @@ $(function () {
 
     $('#lista_cuentas').on('click', 'button[data-accion]', function () {
         var id = Number($(this).data('id'));
-        if ($(this).data('accion') === 'temporal') { generar(id); } else { verHistorial(id); }
+        var accion = $(this).data('accion');
+        if (accion === 'temporal') { generar(id); }
+        else if (accion === 'vercomo') { verComo(id); }
+        else { verHistorial(id); }
     });
     $('dialog').on('click', '[data-cerrar]', function () { this.closest('dialog').close(); });
     $('#btn_copiar').on('click', copiar);
     $('#dlg_temporal').on('close', function () { $('#txt_temporal').text(''); });  /* no dejarla en pantalla */
 });
+
+/* "Ver como" (solo Administrador del sistema; el servidor lo vuelve a comprobar) */
+function verComo(id) {
+    var c = cuentas.filter(function (x) { return x.id === id; })[0];
+    Copeba.confirmar('¿Ver el sistema como ' + (c ? c.nombre : 'esta persona') + '? Verás sus pantallas en modo solo lectura; quedará registrado.', function () {
+        Copeba.enviar('../../controller/cuenta.php?op=ver_como', { usu_id: id }, 'No se pudo entrar en "Ver como".')
+            .done(function () { location.href = '../Home/'; });
+    });
+}
 
 function cargar() {
     $.post('../../controller/usuario.php?op=control_listar').done(function (r) {

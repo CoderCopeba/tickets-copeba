@@ -40,3 +40,11 @@ $.ajaxSetup({ headers: { "X-CSRF-Token": $('meta[name="csrf-token"]').attr("cont
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cerrar(); } });
 })();
 </script>
+
+<script>
+/* Salir de "Ver como" */
+$('#cp_btn_volver').on('click', function () {
+    Copeba.enviar('../../controller/cuenta.php?op=volver', {}, 'No se pudo volver a tu cuenta.')
+        .done(function () { location.href = '../MntUsuario/'; });
+});
+</script>

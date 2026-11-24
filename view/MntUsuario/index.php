@@ -46,16 +46,45 @@
                 </div>
                 <div class="cp-campos-2">
                     <div class="cp-campo">
-                        <label for="sede_id">Sede principal</label>
+                        <label for="sede_id">Agencia / sede</label>
                         <select class="cp-control" id="sede_id" name="sede_id"></select>
                     </div>
                     <div class="cp-campo">
                         <label for="rol_id">Tipo de cuenta</label>
                         <select class="cp-control" id="rol_id" name="rol_id">
                             <option value="<?php echo ROL_COLABORADOR; ?>">Colaborador</option>
-                            <option value="<?php echo ROL_ADMIN; ?>">Administrador del sistema</option>
+                            <option value="<?php echo ROL_ADMIN; ?>">Administrador del sistema (solo Informática)</option>
                         </select>
                     </div>
+                </div>
+
+                <!-- Alta: área de trabajo en el mismo paso -->
+                <fieldset class="cp-grupo" id="grupo_area_alta">
+                    <legend>Área de trabajo</legend>
+                    <div class="cp-campos-2">
+                        <div class="cp-campo">
+                            <label for="area_id">Área</label>
+                            <select class="cp-control" id="area_id" name="area_id"></select>
+                        </div>
+                        <div class="cp-campo">
+                            <label for="fun_id">Función</label>
+                            <select class="cp-control" id="fun_id" name="fun_id"></select>
+                        </div>
+                    </div>
+                    <div class="cp-campo">
+                        <label for="au_puesto">Puesto</label>
+                        <input class="cp-control" id="au_puesto" name="au_puesto" maxlength="80" placeholder="Ej. Cajera 2, Asesor de créditos, Contadora general">
+                        <small class="cp-ayuda">Podrás agregarle más áreas después con el botón Áreas.</small>
+                    </div>
+                </fieldset>
+
+                <!-- Edición: áreas actuales -->
+                <div class="cp-grupo" id="grupo_area_edicion" hidden>
+                    <div class="cp-grupo-cab">
+                        <strong>Áreas de trabajo</strong>
+                        <button type="button" class="cp-btn cp-btn-borde cp-btn-chico" id="btn_areas_desde_editar">Administrar áreas</button>
+                    </div>
+                    <div class="cp-chips" id="areas_actuales"></div>
                 </div>
                 <div class="cp-campo">
                     <label for="usu_pass">Contraseña</label>

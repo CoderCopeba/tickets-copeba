@@ -183,26 +183,19 @@
             return $resultado=$sql->fetchAll();
         }
 
+        /* Baja lógica (la cuenta se conserva por el historial). Antes: procedimiento sp_d_usuario_01 */
         public function delete_usuario($usu_id){
-            $conectar= parent::conexion();
-            parent::set_names();
-            $sql="call sp_d_usuario_01(?)";
-            $sql=$conectar->prepare($sql);
-            $sql->bindValue(1, $usu_id);
-            $sql->execute();
-            $sql->closeCursor();
+            $sql = parent::conexion()->prepare("UPDATE tm_usuario SET est = 0, fech_elim = now() WHERE usu_id = ?");
+            $sql->execute(array((int)$usu_id));
             return array();
         }
 
+        /* Cuentas activas, sin la contraseña. Antes: procedimiento sp_l_usuario_01 */
         public function get_usuario(){
-            $conectar= parent::conexion();
-            parent::set_names();
-            $sql="call sp_l_usuario_01()";
-            $sql=$conectar->prepare($sql);
+            $sql = parent::conexion()->prepare("SELECT usu_id, usu_nom, usu_ape, usu_usuario, usu_correo, rol_id, sede_id, fech_crea
+                                                FROM tm_usuario WHERE est = 1 ORDER BY usu_nom, usu_ape");
             $sql->execute();
-            $resultado=$sql->fetchAll();
-            $sql->closeCursor();
-            return $resultado;
+            return $sql->fetchAll();
         }
 
         /* Lista para Mantenimiento: cuenta, sede principal y resumen de áreas */
@@ -218,7 +211,7 @@
                 LEFT JOIN tm_area a ON a.area_id = au.area_id AND a.est = 1
                 LEFT JOIN tm_funcion f ON f.fun_id = au.fun_id
                 WHERE u.est = 1
-                GROUP BY u.usu_id
+                GROUP BY u.usu_id, s.sede_nom
                 ORDER BY u.usu_nom, u.usu_ape");
             $sql->execute();
             return $sql->fetchAll(PDO::FETCH_ASSOC);
@@ -245,16 +238,12 @@
             return (int)$sql->fetchColumn();
         }
 
+        /* Una cuenta (sin la contraseña). Antes: procedimiento sp_l_usuario_02 */
         public function get_usuario_x_id($usu_id){
-            $conectar= parent::conexion();
-            parent::set_names();
-            $sql="call sp_l_usuario_02(?)";
-            $sql=$conectar->prepare($sql);
-            $sql->bindValue(1, $usu_id);
-            $sql->execute();
-            $resultado=$sql->fetchAll();
-            $sql->closeCursor();
-            return $resultado;
+            $sql = parent::conexion()->prepare("SELECT usu_id, usu_nom, usu_ape, usu_usuario, usu_correo, rol_id, sede_id, est
+                                                FROM tm_usuario WHERE usu_id = ?");
+            $sql->execute(array((int)$usu_id));
+            return $sql->fetchAll();
         }
 
 
@@ -332,7 +321,7 @@
                 LEFT JOIN td_area_usuario au ON au.usu_id = u.usu_id AND au.est = 1
                 LEFT JOIN tm_area a ON a.area_id = au.area_id AND a.est = 1
                 WHERE u.est = 1
-                GROUP BY u.usu_id
+                GROUP BY u.usu_id, s.sede_nom
                 ORDER BY u.usu_pass_temporal DESC, u.usu_nom, u.usu_ape");
             $sql->execute();
             return $sql->fetchAll(PDO::FETCH_ASSOC);
