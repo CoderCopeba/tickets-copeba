@@ -8,6 +8,8 @@
 
     require_once("../models/Documento.php");
     $documento = new Documento();
+    require_once("../models/Prioridad.php");
+    $prioridad = new Prioridad();
 
     /* ===== Adjuntos: reglas ===== */
     const ADJ_MAX_BYTES = 10 * 1024 * 1024; /* 10 MB */
@@ -147,6 +149,8 @@
             $tick_titulo  = trim((string)($_POST["tick_titulo"] ?? ""));
             $tick_descrip = html_limpio($_POST["tick_descrip"] ?? "");
             $cat_id       = (int)($_POST["cat_id"] ?? 0);
+            $prio_id      = (int)($_POST["prio_id"] ?? Prioridad::NORMAL);
+            if (!$prioridad->existe($prio_id)) { $prio_id = Prioridad::NORMAL; }
             if ($tick_titulo === "" || trim(strip_tags($tick_descrip)) === "" || $cat_id <= 0){
                 echo json_encode(array("error" => "Complete el título, la categoría y la descripción."));
                 break;
@@ -161,7 +165,7 @@
             }
 
             /* 2) Crear ticket: el creador SIEMPRE es el usuario de la sesión */
-            $datos=$ticket->insert_ticket(usuario_actual_id(), $cat_id, $tick_titulo, $tick_descrip);
+            $datos=$ticket->insert_ticket(usuario_actual_id(), $cat_id, $tick_titulo, $tick_descrip, $prio_id);
 
             /* 3) Guardar adjuntos */
             if (is_array($datos)==true and count($datos)>0 and count($archivos)>0){

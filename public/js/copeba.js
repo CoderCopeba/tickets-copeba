@@ -7,7 +7,7 @@
      Copeba.enviar(url, datos, msgError) POST que espera {status:"ok"} (acepta FormData)
      Copeba.leer(respuesta)              JSON seguro (devuelve null si no es JSON)
      Copeba.tabla(selector, url, datos)  DataTable con la configuración común
-     Copeba.editor(selector, alto)       editor Summernote con la barra común
+     Copeba.editor(selector, alto, {barra:'simple', ayuda:'...'}) editor Summernote
      Copeba.param(nombre)                parámetro de la URL (?ID=...)
      Copeba.folio(id), Copeba.fecha(valor)
    ========================================================================== */
@@ -155,8 +155,18 @@ var Copeba = (function ($) {
         ['height', ['height']]
     ];
 
-    function editor(selector, alto) {
-        return $(selector).summernote({ height: alto || 200, lang: 'es-ES', toolbar: BARRA_EDITOR });
+    var BARRA_SIMPLE = [['style', ['bold', 'italic']], ['para', ['ul', 'ol']], ['insert', ['link']]];
+
+    /* opciones: { barra: 'simple', ayuda: 'texto de ejemplo' } */
+    function editor(selector, alto, opciones) {
+        opciones = opciones || {};
+        return $(selector).summernote({
+            height: alto || 200,
+            lang: 'es-ES',
+            toolbar: opciones.barra === 'simple' ? BARRA_SIMPLE : BARRA_EDITOR,
+            placeholder: opciones.ayuda || '',
+            disableDragAndDrop: true
+        });
     }
 
     /* ---------- Utilidades ---------- */

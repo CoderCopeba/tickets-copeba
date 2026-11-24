@@ -340,3 +340,97 @@ body.with-side-menu .section-header .breadcrumb { margin: 4px 0 0; padding: 0; b
     .cp-bienvenida { flex-direction: column; align-items: flex-start; }
     .cp-kpi-num { font-size: 26px; }
 }
+
+/* ==========================================================================
+   Formularios (reutilizables en cualquier pantalla)
+   ========================================================================== */
+.cp-encabezado-nota { margin: 0; font-size: 12.5px; color: var(--cp-texto-suave); }
+.cp-con-linea { padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--cp-borde); }
+.cp-campo { margin-bottom: 18px; }
+.cp-campo > label:not(.cp-adjuntos),
+.cp-etiqueta { display: block; margin-bottom: 7px; font-size: 12.5px; font-weight: 700; color: var(--cp-texto); }
+.cp-campos-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.cp-control {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--cp-borde);
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    font-size: 13.5px;
+    color: var(--cp-texto);
+    transition: border-color .15s, box-shadow .15s;
+}
+select.cp-control {
+    appearance: none;
+    padding-right: 34px;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
+}
+.cp-control::placeholder { color: #9aa1ad; }
+.cp-control:focus { outline: none; border-color: var(--cp-verde-oscuro); box-shadow: 0 0 0 3px rgba(11, 74, 43, .12); }
+.cp-control.cp-invalido { border-color: var(--cp-rojo); }
+.cp-oculto { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* Editor (Summernote lite) con el aspecto del sistema */
+.cp-campo .note-editor.note-frame { border: 1px solid var(--cp-borde); border-radius: 8px; overflow: hidden; }
+.cp-campo .note-editor .note-toolbar { background: #f6f3ec; border-bottom: 1px solid var(--cp-borde); padding: 6px 8px; }
+.cp-campo .note-editor .note-btn { border: 0; background: transparent; box-shadow: none; }
+.cp-campo .note-editor .note-btn:hover { background: rgba(0, 0, 0, .06); }
+.cp-campo .note-editor .note-editing-area .note-editable { font-size: 13.5px; color: var(--cp-texto); }
+.cp-campo .note-editor .note-placeholder { color: #9aa1ad; font-size: 13.5px; }
+.cp-campo .note-editor.cp-invalido { border-color: var(--cp-rojo); }
+
+/* Zona de adjuntos */
+.cp-adjuntos {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border: 1.5px dashed #d6d0c2;
+    border-radius: 10px;
+    background: #faf8f3;
+    cursor: pointer;
+    margin: 0;
+    transition: border-color .15s, background .15s;
+}
+.cp-adjuntos:hover, .cp-adjuntos.cp-arrastrando { border-color: var(--cp-verde-oscuro); background: var(--cp-verde-suave); }
+.cp-adjuntos-ico { color: var(--cp-verde-oscuro); line-height: 0; }
+.cp-adjuntos-txt { flex: 1; min-width: 0; }
+.cp-adjuntos-txt strong { display: block; font-size: 13px; }
+.cp-adjuntos-txt small { display: block; font-size: 12px; color: var(--cp-texto-suave); }
+.cp-archivos { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.cp-archivos li {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border: 1px solid var(--cp-borde);
+    border-radius: 8px;
+    font-size: 12.5px;
+    background: #fff;
+}
+.cp-archivos li span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-archivos button { border: 0; background: none; padding: 2px; color: var(--cp-texto-suave); cursor: pointer; line-height: 0; border-radius: 4px; }
+.cp-archivos button:hover { color: var(--cp-rojo); }
+
+.cp-acciones {
+    display: flex; justify-content: flex-end; gap: 10px;
+    margin-top: 22px; padding-top: 18px;
+    border-top: 1px solid var(--cp-borde);
+}
+.cp-btn[disabled] { opacity: .6; cursor: wait; }
+
+/* Paneles laterales */
+.cp-panel-titulo { margin: 0 0 14px; font-family: var(--cp-titulos); font-size: 16px; font-weight: 700; }
+.cp-panel-suave { background: #f6f3ec; }
+.cp-lista-check { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; font-size: 12.5px; line-height: 1.45; }
+.cp-lista-check li { display: flex; gap: 9px; }
+.cp-lista-check svg { flex: none; margin-top: 2px; color: var(--cp-verde-oscuro); }
+
+@media (min-width: 1100px) {
+    .cp-rejilla-form { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
+}
+@media (max-width: 560px) {
+    .cp-campos-2 { grid-template-columns: 1fr; gap: 0; }
+    .cp-adjuntos { flex-wrap: wrap; }
+    .cp-acciones .cp-btn { flex: 1; justify-content: center; }
+}

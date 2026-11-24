@@ -13,6 +13,9 @@ const ICONOS = array(
     "cerrado"  => '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
     "cola"     => '<path d="M4 6h16M4 12h10M4 18h6"/>',
     "menu"     => '<path d="M4 6h16M4 12h16M4 18h16"/>',
+    "adjunto"  => '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 18v-6M9 15l3-3 3 3"/>',
+    "guardar"  => '<path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v5h8V3M7 21v-7h10v7"/>',
+    "quitar"   => '<path d="M6 6l12 12M18 6 6 18"/>',
 );
 
 function icono($nombre, $tam = 18, $grosor = 1.8){

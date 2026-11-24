@@ -1,5 +1,5 @@
 -- Esquema de TICKETS-COPEBA (solo estructura; sin datos de usuarios ni tickets)
--- Actualizado: 2026-11-23 (utf8mb4, categorías iniciales)
+-- Actualizado: 2026-11-24 (utf8mb4, categorías iniciales, prioridades)
 -- Importar en una base vacía. Procedimientos con SQL SECURITY INVOKER y sin DEFINER.
 -- Tras importar: crear la primera cuenta Administrador con  php instalar/crear_admin.php
 
@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS `tm_ticket`;
 DROP TABLE IF EXISTS `tm_categoria`;
 DROP TABLE IF EXISTS `td_ticketdetalle`;
 DROP TABLE IF EXISTS `td_documento`;
+DROP TABLE IF EXISTS `tm_prioridad`;
 DROP TABLE IF EXISTS `tm_rol`;
 
 CREATE TABLE `tm_rol` (
@@ -24,6 +25,21 @@ INSERT INTO `tm_rol` (`rol_id`, `rol_nom`) VALUES
   (1,'Usuario'),
   (2,'Soporte'),
   (3,'Administrador');
+
+CREATE TABLE `tm_prioridad` (
+  `prio_id` int NOT NULL,
+  `prio_nom` varchar(30) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `prio_descrip` varchar(80) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `est` int NOT NULL DEFAULT 1,
+  PRIMARY KEY (`prio_id`),
+  UNIQUE KEY `uq_tm_prioridad_nom` (`prio_nom`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+INSERT INTO `tm_prioridad` (`prio_id`, `prio_nom`, `prio_descrip`, `est`) VALUES
+  (1,'Baja','Consulta o mejora; puede esperar',1),
+  (2,'Normal','No bloquea el trabajo',1),
+  (3,'Alta','Dificulta el trabajo de una persona o área',1),
+  (4,'Crítica','Detiene la atención a asociados o a toda una agencia',1);
 
 CREATE TABLE `td_documento` (
   `doc_id` int NOT NULL AUTO_INCREMENT,
@@ -62,6 +78,7 @@ CREATE TABLE `tm_ticket` (
   `tick_id` int NOT NULL AUTO_INCREMENT,
   `usu_id` int NOT NULL,
   `cat_id` int NOT NULL,
+  `prio_id` int NOT NULL DEFAULT 2,
   `tick_titulo` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
   `tick_descrip` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
   `tick_estado` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci DEFAULT NULL,
@@ -69,7 +86,9 @@ CREATE TABLE `tm_ticket` (
   `usu_asig` int DEFAULT NULL,
   `fech_asig` datetime DEFAULT NULL,
   `est` int NOT NULL,
-  PRIMARY KEY (`tick_id`)
+  PRIMARY KEY (`tick_id`),
+  KEY `fk_tm_ticket_prioridad` (`prio_id`),
+  CONSTRAINT `fk_tm_ticket_prioridad` FOREIGN KEY (`prio_id`) REFERENCES `tm_prioridad` (`prio_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 CREATE TABLE `tm_usuario` (
