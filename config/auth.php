@@ -103,6 +103,23 @@ function sesion_actualizar($modo){
     $_SESSION["rol_id"]  = in_array($cuenta["rol_id"], ROLES_VALIDOS, true) ? $cuenta["rol_id"] : ROL_COLABORADOR;
     $_SESSION["usu_nom"] = $cuenta["usu_nom"];
     $_SESSION["usu_ape"] = $cuenta["usu_ape"];
+
+    /* Con contraseña temporal solo se permite la pantalla "Crea tu contraseña"
+       (que define PERMITE_PASS_TEMPORAL antes de pedir la sesión). */
+    if ((int)$cuenta["usu_pass_temporal"] === 1 && !defined("PERMITE_PASS_TEMPORAL")){
+        if ($modo === "vista"){
+            header("Location:".Conectar::ruta()."view/CambiarPass/");
+            exit();
+        }
+        auth_denegar(403, $modo, "Primero debes crear tu contraseña.");
+    }
+}
+
+/* ¿La cuenta en sesión tiene todavía una contraseña temporal? */
+function pass_temporal_pendiente(){
+    require_once(__DIR__."/../models/Usuario.php");
+    $c = (new Usuario())->cuenta_activa(usuario_actual_id());
+    return $c !== null && (int)$c["usu_pass_temporal"] === 1;
 }
 
 function requiere_sesion($modo = "ajax"){

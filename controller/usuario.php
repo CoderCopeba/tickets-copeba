@@ -69,6 +69,11 @@
                     $usuario->update_usuario((int)$usu_id,$_POST["usu_nom"],$_POST["usu_ape"],$usu_usuario,$_POST["usu_correo"],$usu_pass,$rol_id);
                 }
                 $usuario->set_sede((int)$usu_id, $sede_id);
+                /* La contraseña que pone el administrador es temporal: la persona elegirá la suya al entrar */
+                if ($usu_pass !== "" && (int)$usu_id !== usuario_actual_id()){
+                    $usuario->marcar_temporal((int)$usu_id, $usu_pass, 72);
+                    $usuario->registrar_evento((int)$usu_id, usuario_actual_id(), $es_alta ? "cuenta_creada" : "temporal_generada", "Asignada por el administrador · 72 h");
+                }
             } catch (PDOException $e) {
                 /* 23000 = violación de índice único (dos altas simultáneas con el mismo usuario) */
                 if ($e->getCode() == 23000){
@@ -147,11 +152,69 @@
                 json_error("Complete la contraseña actual y la nueva.");
                 break;
             }
+            if (mb_strlen($nueva) < Usuario::PASS_MINIMO){
+                json_error("La nueva contraseña debe tener al menos ".Usuario::PASS_MINIMO." caracteres.");
+                break;
+            }
             if ($usuario->cambiar_pass(usuario_actual_id(), $actual, $nueva)){
                 echo json_encode(array("status" => "ok"));
             } else {
                 json_error("La contraseña actual no es correcta.");
             }
+            break;
+
+        /* ===== Control de cuentas (Informática): estado de contraseñas, nunca las contraseñas ===== */
+        case "control_listar":
+            requiere_soporte();
+            $data = array();
+            foreach ($usuario->control_lista() as $r){
+                $ultimo = $r["ultimo"] ? explode("|", $r["ultimo"], 3) : null;
+                $data[] = array(
+                    "id"        => (int)$r["usu_id"],
+                    "nombre"    => trim($r["usu_nom"]." ".$r["usu_ape"]),
+                    "usuario"   => $r["usu_usuario"],
+                    "sede"      => $r["sede_nom"] ?? "",
+                    "areas"     => $r["areas"] ?? "",
+                    "admin"     => (int)$r["rol_id"] === ROL_ADMIN,
+                    "temporal"  => (int)$r["usu_pass_temporal"] === 1,
+                    "vencida"   => (int)$r["vencida"] === 1,
+                    "expira"    => $r["usu_pass_expira"],
+                    "fech_pass" => $r["fech_pass"],
+                    "ultimo"    => $ultimo ? array("evento" => $ultimo[0], "fecha" => $ultimo[1], "actor" => trim($ultimo[2])) : null,
+                );
+            }
+            echo json_encode(array("data" => $data, "ahora" => date("Y-m-d H:i:s")));
+            break;
+
+        case "generar_temporal":
+            requiere_soporte();
+            $destino = (int)($_POST["usu_id"] ?? 0);
+            $cuenta  = $usuario->cuenta_activa($destino);
+            if ($cuenta === null){
+                json_error("La cuenta no existe o está desactivada.");
+                break;
+            }
+            if ($destino === usuario_actual_id()){
+                json_error("Para tu propia cuenta usa Perfil → Cambiar contraseña.");
+                break;
+            }
+            if ($cuenta["rol_id"] === ROL_ADMIN && !es_admin()){
+                json_error("Solo un Administrador del sistema puede restablecer la cuenta de otro administrador.");
+                break;
+            }
+            $temporal = $usuario->generar_temporal($destino, usuario_actual_id());
+            /* Se devuelve una sola vez para dictarla; no queda guardada en claro */
+            echo json_encode(array("status" => "ok", "temporal" => $temporal, "horas" => Usuario::HORAS_TEMPORAL,
+                                   "nombre" => trim($cuenta["usu_nom"]." ".$cuenta["usu_ape"])));
+            break;
+
+        case "historial":
+            requiere_soporte();
+            $eventos = array();
+            foreach ($usuario->historial((int)($_POST["usu_id"] ?? 0)) as $h){
+                $eventos[] = array("evento" => $h["ue_evento"], "detalle" => $h["ue_detalle"], "fecha" => $h["fech_crea"], "actor" => $h["actor"]);
+            }
+            echo json_encode($eventos);
             break;
 
         default:

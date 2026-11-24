@@ -577,3 +577,8 @@ body.cp-con-dialogo::after { content: ""; position: fixed; inset: 0; background:
 }
 .cp-lista-sedes-rejilla { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); column-gap: 24px; }
 .cp-lista-sedes-rejilla li:last-child { border-bottom: 1px solid #f0ece3; padding-bottom: 10px; }
+
+/* Contraseña temporal recién generada */
+.cp-temporal { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border: 1.5px dashed var(--cp-verde-oscuro); border-radius: 10px; background: var(--cp-verde-suave); margin-bottom: 16px; }
+.cp-temporal code { font-family: var(--cp-mono); font-size: 24px; font-weight: 700; letter-spacing: .08em; color: var(--cp-verde-oscuro); background: none; padding: 0; }
+.cp-temporal-pasos { font-size: 12.5px; }

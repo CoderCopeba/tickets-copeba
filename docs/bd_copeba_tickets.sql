@@ -1,5 +1,5 @@
 -- Esquema de COPEBA TICKETS (estructura + catálogos; sin usuarios ni tickets)
--- Actualizado: 2026-11-24 (prioridades con SLA, bitácora, sedes y áreas)
+-- Actualizado: 2026-11-25 (prioridades con SLA, bitácora, sedes y áreas, contraseñas temporales)
 -- Importar en una base vacía creada con utf8mb4 / utf8mb4_spanish_ci.
 -- Procedimientos con SQL SECURITY INVOKER y sin DEFINER.
 -- Tras importar: crear la primera cuenta Administrador con  php instalar/crear_admin.php
@@ -62,6 +62,23 @@ CREATE TABLE `td_ticketdetalle` (
   PRIMARY KEY (`tickd_id`),
   KEY `ix_td_ticketdetalle_ticket` (`tick_id`,`fech_crea`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `td_usuario_evento`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `td_usuario_evento` (
+  `ue_id` int NOT NULL AUTO_INCREMENT,
+  `usu_id` int NOT NULL,
+  `actor_id` int DEFAULT NULL,
+  `ue_evento` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
+  `ue_detalle` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `fech_crea` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`ue_id`),
+  KEY `ix_usuario_evento` (`usu_id`,`fech_crea`),
+  KEY `fk_ue_actor` (`actor_id`),
+  CONSTRAINT `fk_ue_actor` FOREIGN KEY (`actor_id`) REFERENCES `tm_usuario` (`usu_id`),
+  CONSTRAINT `fk_ue_usuario` FOREIGN KEY (`usu_id`) REFERENCES `tm_usuario` (`usu_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Historial de cuentas: temporal generada, contraseña cambiada, etc.';
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `tm_area`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -173,6 +190,9 @@ CREATE TABLE `tm_usuario` (
   `usu_usuario` varchar(30) COLLATE utf8mb4_spanish_ci NOT NULL,
   `usu_correo` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
   `usu_pass` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
+  `usu_pass_temporal` tinyint NOT NULL DEFAULT '0',
+  `usu_pass_expira` datetime DEFAULT NULL,
+  `fech_pass` datetime DEFAULT NULL,
   `rol_id` int NOT NULL,
   `sede_id` int DEFAULT NULL,
   `fech_crea` datetime DEFAULT NULL,
