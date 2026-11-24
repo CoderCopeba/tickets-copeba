@@ -31,7 +31,12 @@ php instalar/diagnostico.php
 
 ## Puesta en marcha en una computadora nueva (Laragon, PHP 8.3+)
 
-1. Clonar en `C:\laragon\www\tickets-copeba` y ejecutar `composer install`.
+1. Clonar y ejecutar `composer install`:
+   ```
+   git clone https://github.com/CoderCopeba/tickets-copeba.git C:\laragon\www\tickets-copeba
+   cd C:\laragon\www\tickets-copeba
+   composer install
+   ```
 2. Copiar `.env.example` a `.env` y completar la parte de base de datos con los datos de la nube.
    **La persona** los pide a Informática y los escribe ella misma (en persona o desde un gestor
    de contraseñas; nunca por chat, correo ni Git):
@@ -56,6 +61,9 @@ php instalar/diagnostico.php
 Cuando se integra un PR en `main`, cada persona actualiza su computadora así:
 
 1. Guarda o termina lo que tengas en tu rama (`git status` debe salir limpio).
+   El repositorio está en **https://github.com/CoderCopeba/tickets-copeba**. Si `git remote -v`
+   muestra otra dirección (la antigua `informatica1copeba/...`), cámbiala una vez:
+   `git remote set-url origin https://github.com/CoderCopeba/tickets-copeba.git`
 2. ```
    git switch main
    git pull

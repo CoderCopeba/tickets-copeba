@@ -15,6 +15,8 @@ Sistema de reporte y soporte técnico de la Cooperativa Copeba, R.L.
 
 1. Clonar el repositorio en `C:\laragon\www\tickets-copeba` y ejecutar:
    ```
+   git clone https://github.com/CoderCopeba/tickets-copeba.git C:\laragon\www\tickets-copeba
+   cd C:\laragon\www\tickets-copeba
    composer install
    ```
 2. Copiar `.env.example` a `.env` y completar los datos de la base de datos.
@@ -30,6 +32,15 @@ No hay que crear la base ni importar nada: todo el equipo usa la misma base en l
 Para trabajar sin internet con una base local, ver el anexo de [AGENTS.md](AGENTS.md).
 
 ## Si ya tenías el proyecto
+
+El repositorio se movió a **https://github.com/CoderCopeba/tickets-copeba**. Si `git remote -v`
+muestra la dirección antigua, cámbiala una vez:
+
+```
+git remote set-url origin https://github.com/CoderCopeba/tickets-copeba.git
+```
+
+Luego, para traer lo último:
 
 ```
 git switch main
