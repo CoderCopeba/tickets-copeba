@@ -1,72 +1,52 @@
 <?php
-  require_once("../../config/conexion.php"); 
-  requiere_sesion("vista"); /* Fase 3: comprobación en el servidor */
-  if(isset($_SESSION["usu_id"])){ 
+    require_once("../../config/conexion.php");
+    requiere_sesion("vista");
+    $soporte = es_soporte();
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="es">
     <?php require_once("../MainHead/head.php");?>
-	<title>Copeba · Consultar Ticket</title>
+    <title>Copeba · Tickets</title>
 </head>
 <body class="with-side-menu">
-
     <?php require_once("../MainHeader/header.php");?>
-
-    <div class="mobile-menu-left-overlay"></div>
-    
     <?php require_once("../MainNav/nav.php");?>
 
-	<!-- Contenido -->
-	<div class="page-content">
-		<div class="container-fluid">
+    <div class="page-content">
+        <div class="container-fluid">
+            <header class="cp-encabezado">
+                <div>
+                    <small>Mesa de Ayuda · Copeba, R.L.</small>
+                    <h1>Tickets</h1>
+                </div>
+                <p class="cp-encabezado-nota"><?php echo $soporte ? "Todas las solicitudes de la mesa de ayuda" : "Las solicitudes que has reportado"; ?></p>
+            </header>
 
-			<header class="section-header">
-				<div class="tbl">
-					<div class="tbl-row">
-						<div class="tbl-cell">
-							<h3>Consultar Ticket</h3>
-							<ol class="breadcrumb breadcrumb-simple">
-								<li><a href="../Home/">Inicio</a></li>
-								<li class="active">Consultar Ticket</li>
-							</ol>
-						</div>
-					</div>
-				</div>
-			</header>
+            <div id="lista_tickets"></div>
+        </div>
+    </div>
 
-			<div class="box-typical box-typical-padding">
-				<table id="ticket_data" class="table table-bordered table-striped table-vcenter js-dataTable-full">
-					<thead>
-						<tr>
-							<th style="width: 5%;">Nro.Ticket</th>
-							<th style="width: 15%;">Categoria</th>
-							<th class="d-none d-sm-table-cell" style="width: 40%;">Titulo</th>
-							<th class="d-none d-sm-table-cell" style="width: 5%;">Estado</th>
-							<th class="d-none d-sm-table-cell" style="width: 10%;">Fecha Creación</th>
-							<th class="d-none d-sm-table-cell" style="width: 10%;">Fecha Asignación</th>
-							<th class="d-none d-sm-table-cell" style="width: 10%;">Soporte</th>
-							<th class="text-center" style="width: 5%;"></th>
-						</tr>
-					</thead>
-					<tbody>
+    <?php if ($soporte) { ?>
+    <!-- Asignar a un técnico (el servidor vuelve a comprobar el permiso) -->
+    <dialog class="cp-dialogo" id="dlg_asignar" aria-labelledby="dlg_asignar_titulo">
+        <form id="asignar_form" method="dialog" novalidate>
+            <header><h2 id="dlg_asignar_titulo">Asignar ticket</h2><p id="dlg_asignar_ticket"></p></header>
+            <div class="cp-dialogo-cuerpo">
+                <input type="hidden" id="tick_id" name="tick_id">
+                <div class="cp-campo">
+                    <label for="usu_asig">Técnico</label>
+                    <select class="cp-control" id="usu_asig" name="usu_asig" required></select>
+                </div>
+            </div>
+            <footer>
+                <button type="button" class="cp-btn cp-btn-borde" data-cerrar>Cancelar</button>
+                <button type="submit" class="cp-btn cp-btn-primario">Asignar</button>
+            </footer>
+        </form>
+    </dialog>
+    <?php } ?>
 
-					</tbody>
-				</table>
-			</div>
-
-		</div>
-	</div>
-	<!-- Contenido -->
-	<?php if (es_soporte()) { require_once("modalasignar.php"); } /* asignar: solo Soporte/Admin */ ?>
-
-	<?php require_once("../MainJs/js.php");?>
-
-	<script type="text/javascript" src="consultarticket.js"></script>
-
+    <?php require_once("../MainJs/js.php");?>
+    <script src="consultarticket.js?v=<?php echo filemtime(__DIR__."/consultarticket.js"); ?>"></script>
 </body>
 </html>
-<?php
-  } else {
-    header("Location:".Conectar::ruta()."index.php");
-  }
-?>

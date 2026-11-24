@@ -24,6 +24,7 @@ $.ajaxSetup({ headers: { "X-CSRF-Token": $('meta[name="csrf-token"]').attr("cont
 
 <!-- Recursos compartidos (alertas, tablas, editor, peticiones): public/js/copeba.js -->
 <script src="../../public/js/copeba.js?v=<?php echo filemtime(__DIR__."/../../public/js/copeba.js"); ?>"></script>
+<script src="../../public/js/copeba-listado.js?v=<?php echo filemtime(__DIR__."/../../public/js/copeba-listado.js"); ?>"></script>
 <script>
 /* Menú lateral en celular: abrir / cerrar */
 (function () {

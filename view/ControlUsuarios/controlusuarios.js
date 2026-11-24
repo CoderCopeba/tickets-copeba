@@ -2,6 +2,8 @@
    Las contraseñas nunca llegan al navegador; solo la temporal recién generada, una vez. */
 var cuentas = [];
 var ahora = null;
+var lista;
+var ICONO_LLAVE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 9.2-9.2M17 6l3 3M14.5 8.5l2 2"/></svg>';
 
 var EVENTOS = {
     temporal_generada: 'Temporal generada',
@@ -11,9 +13,54 @@ var EVENTOS = {
 };
 
 $(function () {
+    lista = Copeba.listado('#lista_cuentas', {
+        id: 'cuentas',
+        titulo: 'Cuentas',
+        descripcion: 'Si alguien olvidó su contraseña, genera una temporal y díctasela: al entrar deberá crear la suya.',
+        icono: ICONO_LLAVE,
+        pestanas: [
+            { texto: 'Todas', filtro: null },
+            { texto: 'Temporal pendiente', filtro: function (c) { return c.temporal && !c.vencida; } },
+            { texto: 'Temporal vencida', filtro: function (c) { return c.temporal && c.vencida; } },
+            { texto: 'Con contraseña propia', filtro: function (c) { return !c.temporal; } }
+        ],
+        placeholder: 'Buscar por nombre, usuario, área o sede…',
+        buscar: function (c) { return [c.nombre, c.usuario, c.areas, c.sede].join(' '); },
+        columnas: [
+            { titulo: 'Persona', render: function (c) {
+                return $('<span>').append($('<strong>').text(c.nombre), c.admin ? $('<small class="cp-suave cp-bloque">').text('Administrador del sistema') : null);
+            } },
+            { titulo: 'Usuario', clase: 'cp-mono', render: function (c) { return c.usuario; } },
+            { titulo: 'Área · Sede', render: function (c) {
+                return $('<span>').append($('<span>').text(c.areas || 'Sin área'), $('<small class="cp-suave cp-bloque">').text(c.sede));
+            } },
+            { titulo: 'Contraseña', render: estadoPass },
+            { titulo: 'Último movimiento', render: function (c) {
+                if (!c.ultimo) { return $('<span class="cp-suave">').text('—'); }
+                return $('<span>').append(
+                    $('<span>').text(EVENTOS[c.ultimo.evento] || c.ultimo.evento),
+                    $('<small class="cp-suave cp-bloque">').text(Copeba.fecha(c.ultimo.fecha) + ' ' + Copeba.hora(c.ultimo.fecha) + (c.ultimo.actor ? ' · ' + c.ultimo.actor : '')));
+            } },
+            { titulo: 'Acciones', clase: 'cp-der cp-acciones-fila', render: function (c) {
+                return $('<span>').append(
+                    $('<button type="button" class="cp-btn cp-btn-borde cp-btn-chico">').attr({ 'data-accion': 'historial', 'data-id': c.id }).text('Historial'),
+                    $('<button type="button" class="cp-btn cp-btn-primario cp-btn-chico">').attr({ 'data-accion': 'temporal', 'data-id': c.id }).text('Contraseña temporal'));
+            } }
+        ],
+        vacio: 'No hay cuentas.',
+        total: 'Total de cuentas',
+        exportar: { archivo: 'cuentas', campos: [
+            { titulo: 'Nombre', valor: function (c) { return c.nombre; } },
+            { titulo: 'Usuario', valor: function (c) { return c.usuario; } },
+            { titulo: 'Áreas', valor: function (c) { return c.areas; } },
+            { titulo: 'Sede', valor: function (c) { return c.sede; } },
+            { titulo: 'Contraseña', valor: function (c) { return c.temporal ? (c.vencida ? 'Temporal vencida' : 'Temporal pendiente') : 'Propia'; } },
+            { titulo: 'Último cambio', valor: function (c) { return c.fech_pass || ''; } }
+        ] }
+    });
     cargar();
-    $('#buscar').on('input', pintar);
-    $('#cuentas').on('click', 'button[data-accion]', function () {
+
+    $('#lista_cuentas').on('click', 'button[data-accion]', function () {
         var id = Number($(this).data('id'));
         if ($(this).data('accion') === 'temporal') { generar(id); } else { verHistorial(id); }
     });
@@ -28,7 +75,7 @@ function cargar() {
         cuentas = r.data || [];
         ahora = r.ahora;
         pintarResumen();
-        pintar();
+        lista.datos(cuentas);
     });
 }
 
@@ -57,36 +104,6 @@ function pintarResumen() {
         $r.append($('<article class="cp-tarjeta cp-kpi">').append(
             $('<div class="cp-kpi-cab">').append($('<span>').text(k[0])),
             $('<div class="cp-kpi-pie">').append($('<span class="cp-kpi-num">').text(k[1]))
-        ));
-    });
-}
-
-function pintar() {
-    var q = $.trim($('#buscar').val()).toLowerCase();
-    var $t = $('#cuentas').empty();
-    var filas = cuentas.filter(function (c) {
-        return !q || [c.nombre, c.usuario, c.areas, c.sede].join(' ').toLowerCase().indexOf(q) !== -1;
-    });
-    if (!filas.length) {
-        $t.append($('<tr>').append($('<td colspan="6" class="cp-vacio">').text(q ? 'Sin resultados.' : 'No hay cuentas.')));
-        return;
-    }
-    $.each(filas, function (_, c) {
-        var ultimo = c.ultimo
-            ? $('<span>').append(
-                $('<span>').text(EVENTOS[c.ultimo.evento] || c.ultimo.evento),
-                $('<small class="cp-suave cp-bloque">').text(Copeba.fecha(c.ultimo.fecha) + ' ' + Copeba.hora(c.ultimo.fecha) + (c.ultimo.actor ? ' · ' + c.ultimo.actor : '')))
-            : $('<span class="cp-suave">').text('—');
-        $t.append($('<tr>').append(
-            $('<td>').append($('<strong>').text(c.nombre), c.admin ? $('<small class="cp-suave cp-bloque">').text('Administrador del sistema') : null),
-            $('<td class="cp-mono">').text(c.usuario),
-            $('<td>').append($('<span>').text(c.areas || 'Sin área'), $('<small class="cp-suave cp-bloque">').text(c.sede)),
-            $('<td>').append(estadoPass(c)),
-            $('<td>').append(ultimo),
-            $('<td class="cp-der cp-acciones-fila">').append(
-                $('<button type="button" class="cp-btn cp-btn-borde cp-btn-chico">').attr({ 'data-accion': 'historial', 'data-id': c.id }).text('Historial'),
-                $('<button type="button" class="cp-btn cp-btn-primario cp-btn-chico">').attr({ 'data-accion': 'temporal', 'data-id': c.id }).text('Contraseña temporal')
-            )
         ));
     });
 }

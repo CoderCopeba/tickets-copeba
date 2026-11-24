@@ -103,7 +103,9 @@ quieras conservar). Si no hay script, pregunta al equipo antes de reimportar.
 ## Convenciones
 
 - **Reutiliza antes de escribir.** JavaScript: `public/js/copeba.js` (`Copeba.exito`, `aviso`,
-  `error`, `confirmar`, `enviar`, `leer`, `tabla`, `editor`, `param`, `folio`, `fecha`).
+  `error`, `confirmar`, `pedirTexto`, `dialogo`, `enviar`, `leer`, `editor`, `param`, `folio`, `fecha`,
+  `estado`) y **`Copeba.listado`** (`public/js/copeba-listado.js`) para TODA lista: pestañas,
+  buscador, exportar CSV, paginación y "Mostrar por página". No uses DataTables en pantallas nuevas.
   Iconos PHP: `icono("nombre")` de `config/iconos.php`. Estilos comunes: `public/css/copeba-app.css`.
   Si algo se repite en dos pantallas, conviértelo en recurso compartido.
 

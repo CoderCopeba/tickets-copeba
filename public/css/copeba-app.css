@@ -582,3 +582,56 @@ body.cp-con-dialogo::after { content: ""; position: fixed; inset: 0; background:
 .cp-temporal { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border: 1.5px dashed var(--cp-verde-oscuro); border-radius: 10px; background: var(--cp-verde-suave); margin-bottom: 16px; }
 .cp-temporal code { font-family: var(--cp-mono); font-size: 24px; font-weight: 700; letter-spacing: .08em; color: var(--cp-verde-oscuro); background: none; padding: 0; }
 .cp-temporal-pasos { font-size: 12.5px; }
+
+/* ==========================================================================
+   Listados (Copeba.listado): encabezado, pestañas, buscador, paginación
+   ========================================================================== */
+.cp-listado { margin-bottom: 28px; overflow: hidden; }
+.cp-listado-cab { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 20px 14px; }
+.cp-listado-titulo { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.cp-listado-ico { width: 38px; height: 38px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: var(--cp-verde-suave); color: var(--cp-verde-oscuro); }
+.cp-listado-titulo h2 { margin: 0; font-family: var(--cp-titulos); font-size: 16px; font-weight: 700; }
+.cp-listado-titulo p { margin: 2px 0 0; font-size: 12.5px; color: var(--cp-texto-suave); }
+.cp-listado-barra { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 0 20px 14px; }
+.cp-listado-pestanas { display: inline-flex; border: 1px solid var(--cp-borde); border-radius: 9px; overflow: hidden; background: #fff; flex-wrap: wrap; }
+.cp-listado-pestanas button { border: 0; border-right: 1px solid var(--cp-borde); background: #fff; padding: 8px 14px; font-size: 12.5px; font-weight: 600; color: var(--cp-texto); cursor: pointer; }
+.cp-listado-pestanas button:last-child { border-right: 0; }
+.cp-listado-pestanas button:hover { background: #f6f3ec; }
+.cp-listado-pestanas button.activa { background: var(--cp-verde-suave); color: var(--cp-verde-oscuro); }
+.cp-listado-herr { display: flex; gap: 8px; align-items: center; flex: 1; justify-content: flex-end; min-width: 260px; }
+.cp-listado-buscar { position: relative; margin: 0; flex: 1; max-width: 380px; }
+.cp-listado-buscar .cp-control { height: 40px; padding-left: 36px; border-width: 1.5px; }
+.cp-listado-lupa { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--cp-texto-suave); line-height: 0; pointer-events: none; }
+.cp-listado .cp-tabla-caja { border-top: 1px solid var(--cp-borde); }
+.cp-listado .cp-tabla th { background: #f6f3ec; }
+.cp-listado-pie { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; padding: 12px 20px; border-top: 1px solid var(--cp-borde); font-size: 12.5px; }
+.cp-listado-total { font-weight: 700; }
+.cp-paginacion { display: flex; align-items: center; gap: 4px; }
+.cp-paginacion button { min-width: 32px; height: 32px; padding: 0 8px; border: 1px solid transparent; border-radius: 8px; background: none; font-size: 12.5px; font-weight: 600; color: var(--cp-texto); cursor: pointer; }
+.cp-paginacion button:hover:not(:disabled) { border-color: var(--cp-borde); background: #f6f3ec; }
+.cp-paginacion button.activa { background: var(--cp-verde-oscuro); color: #fff; }
+.cp-paginacion button:disabled { opacity: .35; cursor: default; }
+.cp-paginacion-sep { padding: 0 4px; color: var(--cp-texto-suave); }
+.cp-listado-por { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 400; color: var(--cp-texto-suave); }
+.cp-por-pagina { width: 76px; height: 34px; }
+.cp-link-tabla { color: var(--cp-azul-medio); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.cp-link-tabla:hover { color: var(--cp-verde-oscuro); }
+
+/* Campo de contraseña con ojo */
+.cp-pass { position: relative; display: block; }
+.cp-pass input { padding-right: 42px !important; width: 100%; }
+.cp-ojo-pass { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; padding: 6px; line-height: 0; color: var(--cp-texto-suave); cursor: pointer; border-radius: 6px; }
+.cp-ojo-pass:hover { color: var(--cp-verde-oscuro); background: rgba(0, 0, 0, .04); }
+
+@media (max-width: 760px) {
+    .cp-listado-cab { flex-wrap: wrap; }
+    .cp-listado-herr { min-width: 0; width: 100%; }
+    .cp-listado-buscar { max-width: none; }
+    .cp-listado-pie { justify-content: center; }
+}
+.cp-chip-boton { border: 0; background: none; padding: 0; cursor: pointer; }
+.cp-chip-boton:hover .cp-estado { box-shadow: 0 0 0 2px rgba(180, 35, 24, .25); }
+.cp-listado-buscar, .cp-listado-buscar .cp-control { min-width: 0; }
+.cp-listado-herr > .cp-btn { flex: none; }
+.cp-control { box-sizing: border-box; }
+input[type="search"].cp-control { box-sizing: border-box; -webkit-appearance: none; appearance: none; }

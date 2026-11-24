@@ -19,32 +19,10 @@
                     <small>Administración del sistema · Copeba, R.L.</small>
                     <h1>Usuarios</h1>
                 </div>
-                <button type="button" class="cp-btn cp-btn-primario" id="btn_nuevo"><?php echo icono("mas", 14, 2.6); ?> Nuevo usuario</button>
+                <p class="cp-encabezado-nota">El área define qué ve y hace cada persona. "Administrador del sistema" es solo para Informática.</p>
             </header>
 
-            <div class="cp-seccion-titulo">
-                <div>
-                    <h2>Personal con acceso</h2>
-                    <p>El área define qué ve y hace cada persona. "Administrador del sistema" es solo para Informática.</p>
-                </div>
-                <input type="search" class="cp-control cp-buscar" id="buscar" placeholder="Buscar por nombre, usuario, área o sede…" aria-label="Buscar usuario">
-            </div>
-
-            <div class="cp-tarjeta cp-tabla-caja">
-                <table class="cp-tabla">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Usuario</th>
-                            <th>Sede</th>
-                            <th>Áreas</th>
-                            <th>Cuenta</th>
-                            <th class="cp-der">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usuarios"><tr><td colspan="6" class="cp-vacio">Cargando…</td></tr></tbody>
-                </table>
-            </div>
+            <div id="lista_usuarios"></div>
 
         </div>
     </div>

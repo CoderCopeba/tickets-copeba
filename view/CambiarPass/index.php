@@ -44,7 +44,8 @@
                 <label for="pass_nueva">Nueva contraseña</label>
                 <div class="cp-input">
                     <svg class="cp-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-                    <input type="password" id="pass_nueva" name="pass_nueva" minlength="<?php echo Usuario::PASS_MINIMO; ?>" autocomplete="new-password" required autofocus>
+                    <input type="password" id="pass_nueva" name="pass_nueva" minlength="<?php echo Usuario::PASS_MINIMO; ?>
+                    <button type="button" class="cp-ojo" data-ver="pass_nueva" aria-label="Mostrar contraseña" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button>" autocomplete="new-password" required autofocus>
                 </div>
             </div>
             <div class="cp-campo">
@@ -52,6 +53,7 @@
                 <div class="cp-input">
                     <svg class="cp-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
                     <input type="password" id="pass_repetir" name="pass_repetir" autocomplete="new-password" required>
+                    <button type="button" class="cp-ojo" data-ver="pass_repetir" aria-label="Mostrar contraseña" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
                 </div>
             </div>
 
@@ -89,6 +91,18 @@
     }
     function mostrar(texto) { alerta.textContent = texto; alerta.hidden = false; }
 
+    /* Ojo: mostrar u ocultar lo que se escribe */
+    document.querySelectorAll('[data-ver]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var i = document.getElementById(b.getAttribute('data-ver'));
+            var ver = i.type === 'password';
+            i.type = ver ? 'text' : 'password';
+            b.setAttribute('aria-pressed', ver ? 'true' : 'false');
+            b.setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña');
+            b.style.color = ver ? 'var(--verde-oscuro)' : '';
+            i.focus();
+        });
+    });
     nueva.addEventListener('input', revisar);
     repetir.addEventListener('input', revisar);
 

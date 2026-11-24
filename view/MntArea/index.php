@@ -19,28 +19,12 @@
                     <small>Administración del sistema · Copeba, R.L.</small>
                     <h1>Áreas y sedes</h1>
                 </div>
-                <button type="button" class="cp-btn cp-btn-primario" id="btn_nueva"><?php echo icono("mas", 14, 2.6); ?> Nueva área</button>
             </header>
 
             <div class="cp-kpis" id="resumen"></div>
 
             <div class="cp-rejilla">
-                <section>
-                    <div class="cp-seccion-titulo">
-                        <div>
-                            <h2>Áreas</h2>
-                            <p>Las áreas planificadas existen, pero las cubre otra área hasta tener personal propio.</p>
-                        </div>
-                    </div>
-                    <div class="cp-tarjeta cp-tabla-caja">
-                        <table class="cp-tabla">
-                            <thead>
-                                <tr><th>Área</th><th>Estado</th><th>Alcance</th><th>Integrantes</th><th class="cp-der">Acciones</th></tr>
-                            </thead>
-                            <tbody id="areas"><tr><td colspan="5" class="cp-vacio">Cargando…</td></tr></tbody>
-                        </table>
-                    </div>
-                </section>
+                <div id="lista_areas"></div>
 
                 <aside>
                     <div class="cp-seccion-titulo"><div><h2>Sedes</h2><p>Sede central (administración y agencia), agencias y supermercado.</p></div></div>

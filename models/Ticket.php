@@ -31,33 +31,22 @@
             return ($usu_id === false) ? null : (int)$usu_id;
         }
 
-        public function listar_ticket_x_usu($usu_id){
-            $conectar= parent::conexion();
-            parent::set_names();
-            $sql="SELECT 
-                tm_ticket.tick_id,
-                tm_ticket.usu_id,
-                tm_ticket.cat_id,
-                tm_ticket.tick_titulo,
-                tm_ticket.tick_descrip,
-                tm_ticket.tick_estado,
-                tm_ticket.fech_crea,
-                tm_ticket.usu_asig,
-                tm_ticket.fech_asig,
-                tm_usuario.usu_nom,
-                tm_usuario.usu_ape,
-                tm_categoria.cat_nom
-                FROM 
-                tm_ticket
-                INNER join tm_categoria on tm_ticket.cat_id = tm_categoria.cat_id
-                INNER join tm_usuario on tm_ticket.usu_id = tm_usuario.usu_id
-                WHERE
-                tm_ticket.est = 1
-                AND tm_usuario.usu_id=?";
-            $sql=$conectar->prepare($sql);
-            $sql->bindValue(1, $usu_id);
-            $sql->execute();
-            return $resultado=$sql->fetchAll();
+        /* Lista para la pantalla Tickets: todos (null) o los de una persona. Una sola consulta. */
+        public function lista($usu_id = null){
+            $sql = parent::conexion()->prepare("
+                SELECT t.tick_id, t.tick_titulo, t.tick_estado, t.fech_crea, t.fech_asig, t.usu_asig,
+                       c.cat_nom, p.prio_id, p.prio_nom,
+                       TRIM(CONCAT(u.usu_nom, ' ', u.usu_ape)) AS solicitante,
+                       TRIM(CONCAT(COALESCE(a.usu_nom, ''), ' ', COALESCE(a.usu_ape, ''))) AS asignado
+                FROM tm_ticket t
+                INNER JOIN tm_categoria c ON c.cat_id = t.cat_id
+                INNER JOIN tm_prioridad p ON p.prio_id = t.prio_id
+                INNER JOIN tm_usuario u ON u.usu_id = t.usu_id
+                LEFT JOIN tm_usuario a ON a.usu_id = t.usu_asig
+                WHERE t.est = 1".($usu_id === null ? "" : " AND t.usu_id = ?")."
+                ORDER BY t.tick_id DESC");
+            $sql->execute($usu_id === null ? array() : array((int)$usu_id));
+            return $sql->fetchAll(PDO::FETCH_ASSOC);
         }
 
         public function listar_ticket_x_id($tick_id){
@@ -84,34 +73,6 @@
                 AND tm_ticket.tick_id = ?";
             $sql=$conectar->prepare($sql);
             $sql->bindValue(1, $tick_id);
-            $sql->execute();
-            return $resultado=$sql->fetchAll();
-        }
-
-        public function listar_ticket(){
-            $conectar= parent::conexion();
-            parent::set_names();
-            $sql="SELECT
-                tm_ticket.tick_id,
-                tm_ticket.usu_id,
-                tm_ticket.cat_id,
-                tm_ticket.tick_titulo,
-                tm_ticket.tick_descrip,
-                tm_ticket.tick_estado,
-                tm_ticket.fech_crea,
-                tm_ticket.usu_asig,
-                tm_ticket.fech_asig,
-                tm_usuario.usu_nom,
-                tm_usuario.usu_ape,
-                tm_categoria.cat_nom
-                FROM 
-                tm_ticket
-                INNER join tm_categoria on tm_ticket.cat_id = tm_categoria.cat_id
-                INNER join tm_usuario on tm_ticket.usu_id = tm_usuario.usu_id
-                WHERE
-                tm_ticket.est = 1
-                ";
-            $sql=$conectar->prepare($sql);
             $sql->execute();
             return $resultado=$sql->fetchAll();
         }

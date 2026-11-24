@@ -1,7 +1,8 @@
 /* Mantenimiento de usuarios y de sus áreas (solo Administrador del sistema) */
 var catalogos = { areas: [], sedes: [], funciones: [] };
-var usuarios = [];
+var lista;
 var usuarioAreas = null;   /* id de la persona cuyas áreas se están editando */
+var ICONO_USUARIOS = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.5c1.9.8 3 2.7 3 5.5"/></svg>';
 
 $(function () {
     $.post('../../controller/area.php?op=catalogos').done(function (r) {
@@ -15,14 +16,52 @@ $(function () {
         $('#m_funcion').val('3');
     });
 
+    lista = Copeba.listado('#lista_usuarios', {
+        id: 'usuarios',
+        titulo: 'Personal con acceso',
+        descripcion: 'Cuentas, sede principal y áreas de cada persona.',
+        icono: ICONO_USUARIOS,
+        boton: { texto: 'Nuevo usuario', accion: function () { abrirUsuario(null); } },
+        pestanas: [
+            { texto: 'Todos', filtro: null },
+            { texto: 'Con área', filtro: function (u) { return u.areas.length > 0; } },
+            { texto: 'Sin área', filtro: function (u) { return !u.areas.length; } },
+            { texto: 'Administradores', filtro: function (u) { return u.admin; } }
+        ],
+        placeholder: 'Buscar por nombre, usuario, correo, área o sede…',
+        buscar: function (u) { return [u.nombre, u.usuario, u.correo, u.sede, u.areas.join(' ')].join(' '); },
+        columnas: [
+            { titulo: 'Nombre', render: function (u) { return $('<span>').append($('<strong>').text(u.nombre), $('<small class="cp-suave cp-bloque">').text(u.correo)); } },
+            { titulo: 'Usuario', clase: 'cp-mono', render: function (u) { return u.usuario; } },
+            { titulo: 'Sede', render: function (u) { return u.sede || '—'; } },
+            { titulo: 'Áreas', render: function (u) {
+                var $a = $('<div class="cp-chips">');
+                if (!u.areas.length) { $a.append($('<span class="cp-suave">').text('Sin área')); }
+                $.each(u.areas, function (_, x) { $a.append($('<span class="cp-chip">').text(x)); });
+                return $a;
+            } },
+            { titulo: 'Cuenta', render: function (u) { return u.admin ? $('<span class="cp-estado cerrado">').text('Administrador') : $('<span class="cp-suave">').text('Colaborador'); } },
+            { titulo: 'Acciones', clase: 'cp-der cp-acciones-fila', render: function (u) {
+                return $('<span>').append(boton('areas', u.id, 'Áreas'), boton('editar', u.id, 'Editar'), boton('eliminar', u.id, 'Eliminar', true));
+            } }
+        ],
+        vacio: 'No hay usuarios.',
+        total: 'Total de usuarios',
+        exportar: { archivo: 'usuarios', campos: [
+            { titulo: 'Nombre', valor: function (u) { return u.nombre; } },
+            { titulo: 'Usuario', valor: function (u) { return u.usuario; } },
+            { titulo: 'Correo', valor: function (u) { return u.correo; } },
+            { titulo: 'Sede', valor: function (u) { return u.sede; } },
+            { titulo: 'Áreas', valor: function (u) { return u.areas.join(', '); } },
+            { titulo: 'Cuenta', valor: function (u) { return u.admin ? 'Administrador del sistema' : 'Colaborador'; } }
+        ] }
+    });
     cargar();
 
-    $('#buscar').on('input', pintar);
-    $('#btn_nuevo').on('click', function () { abrirUsuario(null); });
     $('#usuario_form').on('submit', guardar);
     $('#membresia_form').on('submit', agregarMembresia);
     $('#membresias').on('click', 'button', function () { quitarMembresia($(this).data('id')); });
-    $('#usuarios').on('click', 'button[data-accion]', function () {
+    $('#lista_usuarios').on('click', 'button[data-accion]', function () {
         var id = $(this).data('id');
         ({ editar: abrirUsuario, areas: abrirAreas, eliminar: eliminar })[$(this).data('accion')](id);
     });
@@ -30,46 +69,15 @@ $(function () {
     $('#dlg_areas').on('close', cargar);   /* refresca la tabla al terminar */
 });
 
-function llenarSelect(sel, lista, id, texto, vacio) {
+function llenarSelect(sel, datos, id, texto, vacio) {
     var $s = $(sel).empty();
     if (vacio) { $s.append($('<option value="">').text(vacio)); }
-    $.each(lista, function (_, x) { $s.append($('<option>').val(x[id]).text(x[texto])); });
+    $.each(datos, function (_, x) { $s.append($('<option>').val(x[id]).text(x[texto])); });
 }
 
-/* ---------- Tabla ---------- */
 function cargar() {
     $.post('../../controller/usuario.php?op=listar').done(function (r) {
-        usuarios = (Copeba.leer(r) || {}).data || [];
-        pintar();
-    });
-}
-
-function pintar() {
-    var q = $.trim($('#buscar').val()).toLowerCase();
-    var $t = $('#usuarios').empty();
-    var filas = usuarios.filter(function (u) {
-        return !q || [u.nombre, u.usuario, u.correo, u.sede, u.areas.join(' ')].join(' ').toLowerCase().indexOf(q) !== -1;
-    });
-    if (!filas.length) {
-        $t.append($('<tr>').append($('<td colspan="6" class="cp-vacio">').text(q ? 'Sin resultados.' : 'No hay usuarios.')));
-        return;
-    }
-    $.each(filas, function (_, u) {
-        var $areas = $('<div class="cp-chips">');
-        if (!u.areas.length) { $areas.append($('<span class="cp-suave">').text('Sin área')); }
-        $.each(u.areas, function (_, a) { $areas.append($('<span class="cp-chip">').text(a)); });
-        $t.append($('<tr>').append(
-            $('<td>').append($('<strong>').text(u.nombre), $('<small class="cp-suave cp-bloque">').text(u.correo)),
-            $('<td class="cp-mono">').text(u.usuario),
-            $('<td>').text(u.sede || '—'),
-            $('<td>').append($areas),
-            $('<td>').append(u.admin ? $('<span class="cp-estado cerrado">').text('Administrador') : $('<span class="cp-suave">').text('Colaborador')),
-            $('<td class="cp-der cp-acciones-fila">').append(
-                boton('areas', u.id, 'Áreas'),
-                boton('editar', u.id, 'Editar'),
-                boton('eliminar', u.id, 'Eliminar', true)
-            )
-        ));
+        lista.datos((Copeba.leer(r) || {}).data || []);
     });
 }
 
@@ -134,7 +142,7 @@ function eliminar(id) {
 /* ---------- Áreas de la persona ---------- */
 function abrirAreas(id) {
     usuarioAreas = id;
-    var u = usuarios.filter(function (x) { return x.id === id; })[0];
+    var u = lista.filas().filter(function (x) { return x.id === id; })[0];
     $('#dlg_areas_titulo').text('Áreas de ' + (u ? u.nombre : 'la persona'));
     cargarMembresias();
     Copeba.dialogo('dlg_areas');

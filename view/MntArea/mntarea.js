@@ -1,12 +1,64 @@
 /* Áreas y sedes (solo Administrador del sistema) */
 var datos = { areas: [], sedes: [], funciones: [] };
+var lista;
+var ICONO_AREAS = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14v7M14 17.5h7"/></svg>';
 
 $(function () {
+    lista = Copeba.listado('#lista_areas', {
+        id: 'areas',
+        titulo: 'Áreas',
+        descripcion: 'Las áreas planificadas existen, pero las cubre otra área hasta tener personal propio.',
+        icono: ICONO_AREAS,
+        boton: { texto: 'Nueva área', accion: function () { abrirArea(null); } },
+        pestanas: [
+            { texto: 'Todas', filtro: null },
+            { texto: 'Activas', filtro: function (a) { return a.area_estado === 'activa'; } },
+            { texto: 'Planificadas', filtro: function (a) { return a.area_estado === 'planificada'; } },
+            { texto: 'En cada agencia', filtro: function (a) { return Number(a.area_por_sede) === 1; } },
+            { texto: 'Atienden tickets', filtro: function (a) { return Number(a.area_atiende) === 1; } }
+        ],
+        placeholder: 'Buscar área…',
+        buscar: function (a) { return [a.area_nom, a.area_descrip, a.padre_nom, a.cargo_nom].join(' '); },
+        columnas: [
+            { titulo: 'Área', render: function (a) {
+                return $('<span>').append(
+                    $('<strong>').text((a.padre_nom ? '↳ ' : '') + a.area_nom),
+                    $('<small class="cp-suave cp-bloque">').text(a.padre_nom ? 'Subárea de ' + a.padre_nom : (a.area_descrip || '')));
+            } },
+            { titulo: 'Estado', render: function (a) {
+                var planificada = a.area_estado === 'planificada';
+                var $e = $('<span>').append(planificada ? $('<span class="cp-estado pendiente">').text('Planificada') : $('<span class="cp-estado abierto">').text('Activa'));
+                if (planificada && a.cargo_nom) { $e.append($('<small class="cp-suave cp-bloque">').text('La cubre ' + a.cargo_nom)); }
+                return $e;
+            } },
+            { titulo: 'Alcance', render: function (a) {
+                var $c = $('<div class="cp-chips">').append($('<span class="cp-chip">').text(Number(a.area_por_sede) ? 'En cada agencia' : 'Única'));
+                if (Number(a.area_atiende)) { $c.append($('<span class="cp-chip">').text('Atiende tickets')); }
+                return $c;
+            } },
+            { titulo: 'Integrantes', clase: 'cp-mono', render: function (a) { return a.miembros; } },
+            { titulo: 'Acciones', clase: 'cp-der cp-acciones-fila', render: function (a) {
+                return $('<span>').append(
+                    boton('miembros', a.area_id, 'Integrantes'),
+                    boton('editar', a.area_id, 'Editar'),
+                    Number(a.area_atiende) ? null : boton('eliminar', a.area_id, 'Eliminar', true));
+            } }
+        ],
+        vacio: 'No hay áreas.',
+        total: 'Total de áreas',
+        exportar: { archivo: 'areas', campos: [
+            { titulo: 'Área', valor: function (a) { return a.area_nom; } },
+            { titulo: 'Pertenece a', valor: function (a) { return a.padre_nom || ''; } },
+            { titulo: 'Estado', valor: function (a) { return a.area_estado; } },
+            { titulo: 'La cubre', valor: function (a) { return a.cargo_nom || ''; } },
+            { titulo: 'Integrantes', valor: function (a) { return a.miembros; } }
+        ] }
+    });
     cargar();
-    $('#btn_nueva').on('click', function () { abrirArea(null); });
+
     $('#area_form').on('submit', guardar);
     $('#area_estado').on('change', mostrarCargo);
-    $('#areas').on('click', 'button[data-accion]', function () {
+    $('#lista_areas').on('click', 'button[data-accion]', function () {
         var id = Number($(this).data('id'));
         ({ editar: abrirArea, miembros: verMiembros, eliminar: eliminar })[$(this).data('accion')](id);
     });
@@ -17,7 +69,7 @@ function cargar() {
     $.post('../../controller/area.php?op=catalogos').done(function (r) {
         datos = Copeba.leer(r) || datos;
         pintarResumen();
-        pintarAreas();
+        lista.datos(datos.areas);
         pintarSedes();
     });
 }
@@ -38,33 +90,6 @@ function pintarResumen() {
         $r.append($('<article class="cp-tarjeta cp-kpi">').append(
             $('<div class="cp-kpi-cab">').append($('<span>').text(k[0])),
             $('<div class="cp-kpi-pie">').append($('<span class="cp-kpi-num">').text(k[1]))
-        ));
-    });
-}
-
-function pintarAreas() {
-    var $t = $('#areas').empty();
-    $.each(datos.areas, function (_, a) {
-        var planificada = a.area_estado === 'planificada';
-        var $nombre = $('<td>').append(
-            $('<strong>').text((a.padre_nom ? '↳ ' : '') + a.area_nom),
-            $('<small class="cp-suave cp-bloque">').text(a.padre_nom ? 'Subárea de ' + a.padre_nom : (a.area_descrip || ''))
-        );
-        var $estado = $('<td>').append(planificada
-            ? $('<span class="cp-estado pendiente">').text('Planificada')
-            : $('<span class="cp-estado abierto">').text('Activa'));
-        if (planificada && a.cargo_nom) { $estado.append($('<small class="cp-suave cp-bloque">').text('La cubre ' + a.cargo_nom)); }
-        var alcance = [Number(a.area_por_sede) ? 'En cada agencia' : 'Única'];
-        if (Number(a.area_atiende)) { alcance.push('Atiende tickets'); }
-        $t.append($('<tr>').append(
-            $nombre, $estado,
-            $('<td>').append($.map(alcance, function (x) { return $('<span class="cp-chip">').text(x); })),
-            $('<td class="cp-mono">').text(a.miembros),
-            $('<td class="cp-der cp-acciones-fila">').append(
-                boton('miembros', a.area_id, 'Integrantes'),
-                boton('editar', a.area_id, 'Editar'),
-                Number(a.area_atiende) ? null : boton('eliminar', a.area_id, 'Eliminar', true)
-            )
         ));
     });
 }

@@ -111,61 +111,6 @@
         return trim(($_SESSION["usu_nom"] ?? "")." ".($_SESSION["usu_ape"] ?? ""));
     }
 
-    /* ===== Ayudantes de salida ===== */
-    function ticket_estado_html($estado, $tick_id, $puede_reabrir){
-        if ($estado === "Abierto"){
-            return '<span class="label label-pill label-success">Abierto</span>';
-        }
-        if ($estado === "En espera"){
-            return '<span class="label label-pill label-warning">En espera</span>';
-        }
-        if ($puede_reabrir){
-            return '<a onClick="CambiarEstado('.(int)$tick_id.')"><span class="label label-pill label-danger">Cerrado</span></a>';
-        }
-        return '<span class="label label-pill label-danger">Cerrado</span>';
-    }
-
-    function ticket_nombre_asignado($usuario, $usu_asig){
-        $datos1 = $usuario->get_usuario_x_id($usu_asig);
-        $nombre = (is_array($datos1) && count($datos1) > 0) ? $datos1[0]["usu_nom"] : "(desconocido)";
-        return '<span class="label label-pill label-success">'.e($nombre).'</span>';
-    }
-
-    function ticket_fila($row, $usuario, $con_asignar){
-        $id = (int)$row["tick_id"];
-        $sub_array = array();
-        $sub_array[] = $id;
-        $sub_array[] = e($row["cat_nom"]);
-        $sub_array[] = e($row["tick_titulo"]);
-        $sub_array[] = ticket_estado_html($row["tick_estado"], $id, true);
-        $sub_array[] = date("d/m/Y H:i:s", strtotime($row["fech_crea"]));
-
-        if($row["fech_asig"]==null){
-            $sub_array[] = '<span class="label label-pill label-default">Sin Asignar</span>';
-        }else{
-            $sub_array[] = date("d/m/Y H:i:s", strtotime($row["fech_asig"]));
-        }
-
-        if($row["usu_asig"]==null){
-            $sub_array[] = $con_asignar
-                ? '<a onClick="asignar('.$id.');"><span class="label label-pill label-warning">Sin Asignar</span></a>'
-                : '<span class="label label-pill label-warning">Sin Asignar</span>';
-        }else{
-            $sub_array[] = ticket_nombre_asignado($usuario, $row["usu_asig"]);
-        }
-
-        $sub_array[] = '<a href="../DetalleTicket/?ID='.$id.'" class="btn btn-inline btn-primary btn-sm" title="Ver ticket" aria-label="Ver ticket '.$id.'"><i class="fa fa-eye"></i></a>';
-        return $sub_array;
-    }
-
-    function ticket_tabla_json($data){
-        return json_encode(array(
-            "sEcho"=>1,
-            "iTotalRecords"=>count($data),
-            "iTotalDisplayRecords"=>count($data),
-            "aaData"=>$data));
-    }
-
     /* Ninguna operación de este controlador es pública */
     requiere_sesion("ajax");
 
@@ -360,25 +305,27 @@
             ticket_ok();
         break;
 
-        /* ===== Cualquier rol: SUS tickets (id tomado de la sesión) ===== */
-        case "listar_x_usu":
-            $datos=$ticket->listar_ticket_x_usu(usuario_actual_id());
-            $data= Array();
-            foreach($datos as $row){
-                $data[] = ticket_fila($row, $usuario, false);
+        /* ===== Lista de la pantalla Tickets (datos en texto; la vista los pinta) =====
+           Quien atiende tickets ve todos; el resto, solo los suyos. */
+        case "lista":
+            $soporte = es_soporte();
+            $data = array();
+            foreach ($ticket->lista($soporte ? null : usuario_actual_id()) as $r){
+                $data[] = array(
+                    "id"          => (int)$r["tick_id"],
+                    "titulo"      => $r["tick_titulo"],
+                    "estado"      => $r["tick_estado"],
+                    "categoria"   => $r["cat_nom"],
+                    "prioridad"   => $r["prio_nom"],
+                    "prio_id"     => (int)$r["prio_id"],
+                    "fecha"       => $r["fech_crea"],
+                    "fech_asig"   => $r["fech_asig"],
+                    "solicitante" => $r["solicitante"],
+                    "asignado"    => $r["usu_asig"] ? $r["asignado"] : "",
+                    "mio"         => (int)$r["usu_asig"] === usuario_actual_id(),
+                );
             }
-            echo ticket_tabla_json($data);
-        break;
-
-        /* ===== Soporte y Administrador: todos los tickets ===== */
-        case "listar":
-            requiere_soporte();
-            $datos=$ticket->listar_ticket();
-            $data= Array();
-            foreach($datos as $row){
-                $data[] = ticket_fila($row, $usuario, true);
-            }
-            echo ticket_tabla_json($data);
+            echo json_encode(array("data" => $data, "soporte" => $soporte));
         break;
 
         default:

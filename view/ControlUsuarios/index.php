@@ -24,22 +24,7 @@
 
             <div class="cp-kpis" id="resumen"></div>
 
-            <div class="cp-seccion-titulo">
-                <div>
-                    <h2>Cuentas</h2>
-                    <p>Si alguien olvidó su contraseña, genera una temporal y díctasela: al entrar deberá crear la suya.</p>
-                </div>
-                <input type="search" class="cp-control cp-buscar" id="buscar" placeholder="Buscar por nombre, usuario, área o sede…" aria-label="Buscar cuenta">
-            </div>
-
-            <div class="cp-tarjeta cp-tabla-caja">
-                <table class="cp-tabla">
-                    <thead>
-                        <tr><th>Persona</th><th>Usuario</th><th>Área · Sede</th><th>Contraseña</th><th>Último movimiento</th><th class="cp-der">Acciones</th></tr>
-                    </thead>
-                    <tbody id="cuentas"><tr><td colspan="6" class="cp-vacio">Cargando…</td></tr></tbody>
-                </table>
-            </div>
+            <div id="lista_cuentas"></div>
         </div>
     </div>
 
