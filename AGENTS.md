@@ -51,6 +51,26 @@ php instalar/diagnostico.php
 
 **Sin acceso a la nube (trabajo sin internet):** base local opcional; ver al final.
 
+## Si ya tenías el proyecto (traer lo último)
+
+Cuando se integra un PR en `main`, cada persona actualiza su computadora así:
+
+1. Guarda o termina lo que tengas en tu rama (`git status` debe salir limpio).
+2. ```
+   git switch main
+   git pull
+   composer install
+   ```
+3. Compara tu `.env` con `.env.example`: agrega las variables nuevas y borra las que ya no
+   existan (por ejemplo, `CHAT_API_URL` y `CHAT_API_TOKEN` ya no se usan). No copies encima
+   tu `.env`: perderías tus datos.
+4. `php instalar/diagnostico.php` → "Todo en orden".
+5. En el navegador, recarga con **Ctrl+F5** (para no usar archivos JS/CSS viejos).
+6. Para seguir con tu trabajo: `git switch <tu-rama>` y `git merge main`.
+
+No hace falta tocar la base: los cambios de estructura ya los aplicó un administrador en la nube.
+Si el diagnóstico dice que faltan migraciones, avisa a Informática; no las ejecutes tú.
+
 ## Problemas frecuentes
 
 | Síntoma | Causa | Qué hacer |
@@ -120,7 +140,7 @@ php instalar/diagnostico.php
 - **Reutiliza antes de escribir.** JavaScript: `public/js/copeba.js` (`Copeba.exito`, `aviso`,
   `error`, `confirmar`, `pedirTexto`, `dialogo`, `enviar`, `leer`, `editor`, `param`, `folio`,
   `fecha`, `estado`) y **`Copeba.listado`** (`public/js/copeba-listado.js`) para TODA lista.
-  No uses DataTables en pantallas nuevas. Iconos PHP: `icono("nombre")`. Estilos:
+  DataTables ya no está en el proyecto: no lo vuelvas a agregar. Iconos PHP: `icono("nombre")`. Estilos:
   `public/css/copeba-app.css`. Si algo se repite en dos pantallas, conviértelo en recurso compartido.
 - Español en código, comentarios, mensajes y commits.
 - Autorización siempre en el servidor; ocultar botones no basta.

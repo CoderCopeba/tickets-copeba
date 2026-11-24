@@ -10,8 +10,6 @@ $.ajaxSetup({ headers: { "X-CSRF-Token": $('meta[name="csrf-token"]').attr("cont
 <script src="../../public/js/plugins.js"></script>
 <script src="../../public/js/app.js"></script>
 
-<script src="../../public/js/lib/datatables-net/datatables.min.js"></script>
-
 <script src="../../public/js/lib/bootstrap-sweetalert/sweetalert.min.js"></script>
 
 <script src="../../public/js/lib/summernote/summernote-lite.min.js"></script>

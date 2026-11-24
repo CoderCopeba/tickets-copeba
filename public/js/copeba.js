@@ -8,7 +8,6 @@
      Copeba.dialogo(id) / (id, false)     abre / cierra un <dialog class="cp-dialogo">
      Copeba.enviar(url, datos, msgError) POST que espera {status:"ok"} (acepta FormData)
      Copeba.leer(respuesta)              JSON seguro (devuelve null si no es JSON)
-     Copeba.tabla(selector, url, datos)  DataTable con la configuración común
      Copeba.editor(selector, alto, {barra:'simple', ayuda:'...'}) editor Summernote
      Copeba.param(nombre)                parámetro de la URL (?ID=...)
      Copeba.folio(id), Copeba.fecha(valor), Copeba.hora(valor), Copeba.iniciales(nombre)
@@ -138,59 +137,6 @@ var Copeba = (function ($) {
         return resultado.promise();
     }
 
-    /* ---------- Tablas (DataTables) ---------- */
-    var IDIOMA_TABLAS = {
-        sProcessing: 'Procesando...',
-        sLengthMenu: 'Mostrar _MENU_ registros',
-        sZeroRecords: 'No se encontraron resultados',
-        sEmptyTable: 'Ningún dato disponible en esta tabla',
-        sInfo: 'Mostrando un total de _TOTAL_ registros',
-        sInfoEmpty: 'Mostrando un total de 0 registros',
-        sInfoFiltered: '(filtrado de un total de _MAX_ registros)',
-        sSearch: 'Buscar:',
-        sInfoThousands: ',',
-        sLoadingRecords: 'Cargando...',
-        oPaginate: { sFirst: 'Primero', sLast: 'Último', sNext: 'Siguiente', sPrevious: 'Anterior' },
-        oAria: {
-            sSortAscending: ': Activar para ordenar la columna de manera ascendente',
-            sSortDescending: ': Activar para ordenar la columna de manera descendente'
-        }
-    };
-
-    /* Valores por defecto para TODAS las tablas del sistema */
-    if ($.fn.dataTable) {
-        $.extend(true, $.fn.dataTable.defaults, {
-            dom: 'Bfrtip',
-            searching: true,
-            lengthChange: false,
-            colReorder: true,
-            buttons: ['copyHtml5', 'excelHtml5', 'csvHtml5', 'pdfHtml5'],
-            destroy: true,
-            responsive: true,
-            info: true,
-            pageLength: 10,
-            autoWidth: false,
-            language: IDIOMA_TABLAS
-        });
-    }
-
-    /* Tabla cargada por POST desde un controlador. "opciones" permite ajustar
-       cualquier valor (p. ej. {ordering:false}). */
-    function tabla(selector, url, datos, opciones) {
-        return $(selector).DataTable($.extend(true, {
-            ajax: {
-                url: url,
-                type: 'POST',
-                data: datos || {},
-                dataType: 'json',
-                error: function (xhr) {
-                    if (xhr.status === 401) { window.location.href = '../../index.php'; return; }
-                    aviso(textoError(leer(xhr.responseText), 'No se pudo cargar la tabla.'));
-                }
-            }
-        }, opciones || {}));
-    }
-
     /* ---------- Editor de texto (Summernote) ---------- */
     var BARRA_EDITOR = [
         ['style', ['bold', 'italic', 'underline', 'clear']],
@@ -251,7 +197,7 @@ var Copeba = (function ($) {
     return {
         exito: exito, aviso: aviso, error: error, confirmar: confirmar, pedirTexto: pedirTexto, dialogo: dialogo,
         leer: leer, enviar: enviar,
-        tabla: tabla, editor: editor,
+        editor: editor,
         param: param, folio: folio, fecha: fecha, hora: hora, iniciales: iniciales, estado: estado
     };
 })(jQuery);
