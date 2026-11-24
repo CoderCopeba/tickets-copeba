@@ -299,7 +299,7 @@ INSERT INTO `tm_funcion` (`fun_id`, `fun_nom`, `fun_descrip`) VALUES (2,'Suplent
 INSERT INTO `tm_funcion` (`fun_id`, `fun_nom`, `fun_descrip`) VALUES (3,'Colaborador','Integrante del área (auxiliar, asesor, cajero, etc.)');
 INSERT INTO `tm_funcion` (`fun_id`, `fun_nom`, `fun_descrip`) VALUES (4,'Pasante','Practicante temporal');
 
-INSERT INTO `tm_sede` (`sede_id`, `sede_nom`, `sede_tipo`, `sede_municipio`, `sede_departamento`, `est`) VALUES (1,'Edificio Administrativo','administrativa','Aldea Barraneché, Totonicapán','Totonicapán',1);
+INSERT INTO `tm_sede` (`sede_id`, `sede_nom`, `sede_tipo`, `sede_municipio`, `sede_departamento`, `est`) VALUES (1,'Sede Central Barraneché','central','Aldea Barraneché, Totonicapán','Totonicapán',1);
 INSERT INTO `tm_sede` (`sede_id`, `sede_nom`, `sede_tipo`, `sede_municipio`, `sede_departamento`, `est`) VALUES (2,'Agencia Totonicapán Central','agencia','Totonicapán','Totonicapán',1);
 INSERT INTO `tm_sede` (`sede_id`, `sede_nom`, `sede_tipo`, `sede_municipio`, `sede_departamento`, `est`) VALUES (3,'Agencia La Esperanza','agencia',NULL,NULL,1);
 INSERT INTO `tm_sede` (`sede_id`, `sede_nom`, `sede_tipo`, `sede_municipio`, `sede_departamento`, `est`) VALUES (4,'Agencia La Concordia','agencia',NULL,NULL,1);
@@ -309,11 +309,11 @@ INSERT INTO `tm_sede` (`sede_id`, `sede_nom`, `sede_tipo`, `sede_municipio`, `se
 INSERT INTO `tm_sede` (`sede_id`, `sede_nom`, `sede_tipo`, `sede_municipio`, `sede_departamento`, `est`) VALUES (8,'Agencia San Juan Ixcoy','agencia','San Juan Ixcoy','Huehuetenango',1);
 INSERT INTO `tm_sede` (`sede_id`, `sede_nom`, `sede_tipo`, `sede_municipio`, `sede_departamento`, `est`) VALUES (9,'Supermercado Comunitario','supermercado',NULL,NULL,1);
 
-INSERT INTO `tm_area` (`area_id`, `area_nom`, `area_descrip`, `area_padre_id`, `area_cargo_id`, `area_estado`, `area_por_sede`, `area_atiende`, `est`) VALUES (1,'Gerencia y Administración','Gerencia general, directivos y secretaría de administración',NULL,NULL,'activa',0,0,1);
+INSERT INTO `tm_area` (`area_id`, `area_nom`, `area_descrip`, `area_padre_id`, `area_cargo_id`, `area_estado`, `area_por_sede`, `area_atiende`, `est`) VALUES (1,'Gerencia y Administración','Gerente general (dirige la parte administrativa), directivos y secretaría de administración',NULL,NULL,'activa',0,0,1);
 INSERT INTO `tm_area` (`area_id`, `area_nom`, `area_descrip`, `area_padre_id`, `area_cargo_id`, `area_estado`, `area_por_sede`, `area_atiende`, `est`) VALUES (2,'Consejo de Administración','Órgano de gobierno de la cooperativa',NULL,NULL,'activa',0,0,1);
 INSERT INTO `tm_area` (`area_id`, `area_nom`, `area_descrip`, `area_padre_id`, `area_cargo_id`, `area_estado`, `area_por_sede`, `area_atiende`, `est`) VALUES (3,'Cumplimiento','Oficial de cumplimiento, suplente y auxiliar',NULL,NULL,'activa',0,0,1);
 INSERT INTO `tm_area` (`area_id`, `area_nom`, `area_descrip`, `area_padre_id`, `area_cargo_id`, `area_estado`, `area_por_sede`, `area_atiende`, `est`) VALUES (4,'Contabilidad','Contador(a) general, auxiliares y pasantes',NULL,NULL,'activa',0,0,1);
-INSERT INTO `tm_area` (`area_id`, `area_nom`, `area_descrip`, `area_padre_id`, `area_cargo_id`, `area_estado`, `area_por_sede`, `area_atiende`, `est`) VALUES (5,'Jefatura de Agencia','Responsable de toda la agencia (Caja, Atención y Créditos)',NULL,NULL,'activa',1,0,1);
+INSERT INTO `tm_area` (`area_id`, `area_nom`, `area_descrip`, `area_padre_id`, `area_cargo_id`, `area_estado`, `area_por_sede`, `area_atiende`, `est`) VALUES (5,'Jefatura de Agencia','Jefe(a) de cada agencia, incluida la de la sede central: Caja, Atención y Créditos',NULL,NULL,'activa',1,0,1);
 INSERT INTO `tm_area` (`area_id`, `area_nom`, `area_descrip`, `area_padre_id`, `area_cargo_id`, `area_estado`, `area_por_sede`, `area_atiende`, `est`) VALUES (6,'Caja','Receptores pagadores',NULL,NULL,'activa',1,0,1);
 INSERT INTO `tm_area` (`area_id`, `area_nom`, `area_descrip`, `area_padre_id`, `area_cargo_id`, `area_estado`, `area_por_sede`, `area_atiende`, `est`) VALUES (7,'Atención al Asociado','Secretaría y servicio al asociado',NULL,NULL,'activa',1,0,1);
 INSERT INTO `tm_area` (`area_id`, `area_nom`, `area_descrip`, `area_padre_id`, `area_cargo_id`, `area_estado`, `area_por_sede`, `area_atiende`, `est`) VALUES (8,'Créditos','Asesores, oficial y administración de créditos',NULL,NULL,'activa',1,0,1);

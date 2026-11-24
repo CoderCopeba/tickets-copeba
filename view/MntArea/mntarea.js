@@ -75,7 +75,7 @@ function boton(accion, id, texto, peligro) {
 }
 
 function pintarSedes() {
-    var tipos = { administrativa: 'Administrativa', agencia: 'Agencia', supermercado: 'Supermercado' };
+    var tipos = { central: 'Central · Administración y agencia', administrativa: 'Administrativa', agencia: 'Agencia', supermercado: 'Supermercado' };
     var $s = $('#sedes').empty();
     $.each(datos.sedes, function (_, s) {
         var lugar = [s.sede_municipio, s.sede_departamento].filter(Boolean).join(', ');

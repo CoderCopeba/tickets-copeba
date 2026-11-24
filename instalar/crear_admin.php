@@ -72,7 +72,7 @@ if (!hash_equals($pass, $pass2)) {
 $usuario->insert_usuario($nombre, $apellido, $usu_usuario, $correo, $pass, ROL_ADMIN);
 
 if ($usuario->existe_usuario($usu_usuario)) {
-    /* El administrador del sistema pertenece a Informática, en el Edificio Administrativo */
+    /* El administrador del sistema pertenece a Informática, en la Sede Central */
     require_once(__DIR__."/../models/Area.php");
     $area    = new Area();
     $usu_id  = $usuario->id_por_usuario($usu_usuario);

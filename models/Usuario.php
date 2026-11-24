@@ -214,6 +214,16 @@
             return $sql->fetchAll(PDO::FETCH_ASSOC);
         }
 
+        /* Datos mínimos de una cuenta activa, o null si no existe / está desactivada */
+        public function cuenta_activa($usu_id){
+            $sql = parent::conexion()->prepare("SELECT rol_id, usu_nom, usu_ape FROM tm_usuario WHERE usu_id = ? AND est = 1");
+            $sql->execute(array((int)$usu_id));
+            $f = $sql->fetch(PDO::FETCH_ASSOC);
+            if (!$f) { return null; }
+            $f["rol_id"] = (int)$f["rol_id"];
+            return $f;
+        }
+
         public function set_sede($usu_id, $sede_id){
             $sql = parent::conexion()->prepare("UPDATE tm_usuario SET sede_id = ? WHERE usu_id = ?");
             $sql->execute(array($sede_id ? (int)$sede_id : null, (int)$usu_id));

@@ -87,10 +87,29 @@ function auth_denegar($codigo, $modo, $mensaje = null){
     exit();
 }
 
+/* Relee de la base (una vez por petición) el tipo de cuenta y si sigue activa.
+   Así un cambio hecho por el administrador aplica sin cerrar sesión, y una
+   cuenta desactivada pierde el acceso de inmediato. */
+function sesion_actualizar($modo){
+    static $hecho = false;
+    if ($hecho) { return; }
+    $hecho = true;
+    require_once(__DIR__."/../models/Usuario.php");
+    $cuenta = (new Usuario())->cuenta_activa(usuario_actual_id());
+    if ($cuenta === null){
+        $_SESSION = array();
+        auth_denegar(401, $modo);
+    }
+    $_SESSION["rol_id"]  = in_array($cuenta["rol_id"], ROLES_VALIDOS, true) ? $cuenta["rol_id"] : ROL_COLABORADOR;
+    $_SESSION["usu_nom"] = $cuenta["usu_nom"];
+    $_SESSION["usu_ape"] = $cuenta["usu_ape"];
+}
+
 function requiere_sesion($modo = "ajax"){
     if (usuario_actual_id() === null || rol_actual() === null){
         auth_denegar(401, $modo);
     }
+    sesion_actualizar($modo);
     /* Toda petición AJAX por POST debe traer el token CSRF de la sesión */
     if ($modo === "ajax" && es_post() && !csrf_valido()){
         auth_denegar(403, $modo, "La sesión caducó o la petición no es válida. Recarga la página.");

@@ -46,7 +46,7 @@ class Area extends Conectar {
     }
 
     public function id_sede_administrativa(){
-        return (int)$this->valor("SELECT sede_id FROM tm_sede WHERE sede_tipo = 'administrativa' AND est = 1 ORDER BY sede_id LIMIT 1");
+        return (int)$this->valor("SELECT sede_id FROM tm_sede WHERE sede_tipo IN ('central', 'administrativa') AND est = 1 ORDER BY sede_id LIMIT 1");
     }
 
     /* ---------- Catálogos ---------- */

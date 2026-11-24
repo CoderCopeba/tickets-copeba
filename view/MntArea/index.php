@@ -43,7 +43,7 @@
                 </section>
 
                 <aside>
-                    <div class="cp-seccion-titulo"><div><h2>Sedes</h2><p>Edificio administrativo, agencias y supermercado.</p></div></div>
+                    <div class="cp-seccion-titulo"><div><h2>Sedes</h2><p>Sede central (administración y agencia), agencias y supermercado.</p></div></div>
                     <div class="cp-tarjeta cp-panel">
                         <ul class="cp-lista-sedes cp-lista-sedes-rejilla" id="sedes"></ul>
                     </div>
