@@ -33,28 +33,35 @@ function es_admin(){
 /* Gestiona tickets: administrador del sistema o miembro de un área que atiende tickets.
    Se consulta en cada petición (una vez), así un cambio de área aplica de inmediato. */
 function es_soporte(){
-    static $cache = null;
-    if ($cache === null){
-        if (usuario_actual_id() === null){
-            return false;
-        }
-        require_once(__DIR__."/../models/Area.php");
-        $cache = es_admin() || (new Area())->atiende_tickets(usuario_actual_id());
+    if (usuario_actual_id() === null){
+        return false;
     }
-    return $cache;
+    $c = cuenta_sesion();
+    return es_admin() || ($c !== null && $c["atiende"]);
 }
 
 /* Reportes de actividad: administradores del sistema y la Responsable de
    Gerencia y Administración (gerente general). Solo lectura. */
 const AREA_GERENCIA = "Gerencia y Administración";
 function puede_ver_reportes(){
-    static $cache = null;
-    if ($cache === null){
-        if (usuario_actual_id() === null){ return false; }
-        require_once(__DIR__."/../models/Area.php");
-        $cache = es_admin() || (new Area())->es_responsable(usuario_actual_id(), AREA_GERENCIA);
+    if (usuario_actual_id() === null){ return false; }
+    $c = cuenta_sesion();
+    return es_admin() || ($c !== null && $c["responsable_reportes"]);
+}
+
+/* Cuenta de la sesión leída de la base UNA vez por petición (tipo, si está activa,
+   contraseña temporal, si atiende tickets y si ve reportes): una sola consulta.
+   Se relee en cada petición, así un cambio de área o de tipo aplica de inmediato. */
+function cuenta_sesion(){
+    static $cargada = false, $cuenta = null;
+    if (!$cargada){
+        $cargada = true;
+        if (usuario_actual_id() !== null){
+            require_once(__DIR__."/../models/Usuario.php");
+            $cuenta = (new Usuario())->cuenta_activa(usuario_actual_id(), AREA_GERENCIA);
+        }
     }
-    return $cache;
+    return $cuenta;
 }
 
 function rol_nombre($rol_id){
@@ -107,8 +114,7 @@ function sesion_actualizar($modo){
     static $hecho = false;
     if ($hecho) { return; }
     $hecho = true;
-    require_once(__DIR__."/../models/Usuario.php");
-    $cuenta = (new Usuario())->cuenta_activa(usuario_actual_id());
+    $cuenta = cuenta_sesion();
     if ($cuenta === null){
         $_SESSION = array();
         auth_denegar(401, $modo);
@@ -131,8 +137,7 @@ function sesion_actualizar($modo){
 
 /* ¿La cuenta en sesión tiene todavía una contraseña temporal? */
 function pass_temporal_pendiente(){
-    require_once(__DIR__."/../models/Usuario.php");
-    $c = (new Usuario())->cuenta_activa(usuario_actual_id());
+    $c = cuenta_sesion();
     return $c !== null && (int)$c["usu_pass_temporal"] === 1;
 }
 
@@ -148,6 +153,13 @@ function requiere_sesion($modo = "ajax"){
     /* "Ver como": solo lectura */
     if ($modo === "ajax" && es_post() && viendo_como() && !operacion_de_lectura()){
         auth_denegar(403, $modo, "Estás en modo \"Ver como\" (solo lectura). Vuelve a tu cuenta para hacer cambios.");
+    }
+    /* Las consultas de solo lectura liberan la sesión en cuanto se validan: PHP bloquea
+       el archivo de sesión mientras dura la petición, y sin esto las peticiones de una
+       misma pantalla esperan en fila una detrás de otra. $_SESSION se sigue pudiendo leer.
+       cuenta.php queda fuera porque "volver" modifica la sesión. */
+    if ($modo === "ajax" && operacion_de_lectura() && basename($_SERVER["SCRIPT_NAME"] ?? "") !== "cuenta.php"){
+        session_write_close();
     }
 }
 

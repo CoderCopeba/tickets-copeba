@@ -130,7 +130,10 @@ Si el diagnóstico dice que faltan migraciones, avisa a Informática; no las eje
 - **No** uses procedimientos almacenados, triggers, eventos ni `utf8mb4_spanish_ci`.
   Cotejamiento: `utf8mb4_0900_ai_ci` (ignora mayúsculas y acentos).
 - Siempre consultas preparadas con PDO (`?`); nunca concatenes datos del usuario en SQL.
-- Pocas consultas por pantalla: el servidor está en Virginia (~70 ms por consulta).
+- Pocas consultas por pantalla: el servidor está en Virginia (~150 ms por consulta medido desde
+  Guatemala). Sesión y permisos ya vienen en UNA consulta por petición (`cuenta_sesion()` en
+  `config/auth.php`): no vuelvas a consultar el área o el tipo de cuenta por separado. Las operaciones
+  de solo lectura van en `operacion_de_lectura()`: así liberan la sesión y no hacen esperar a las demás.
 
 ## Estructura
 
@@ -147,8 +150,10 @@ Si el diagnóstico dice que faltan migraciones, avisa a Informática; no las eje
 
 - **Reutiliza antes de escribir.** JavaScript: `public/js/copeba.js` (`Copeba.exito`, `aviso`,
   `error`, `confirmar`, `pedirTexto`, `dialogo`, `enviar`, `leer`, `editor`, `param`, `folio`,
-  `fecha`, `estado`) y **`Copeba.listado`** (`public/js/copeba-listado.js`) para TODA lista.
-  DataTables ya no está en el proyecto: no lo vuelvas a agregar. Iconos PHP: `icono("nombre")`. Estilos:
+  `fecha`, `estado`, `calendario`) y **`Copeba.listado`** (`public/js/copeba-listado.js`) para TODA lista.
+  DataTables ya no está en el proyecto: no lo vuelvas a agregar. Todo `<input type="date">`
+  usa solo el calendario propio (`Copeba.calendario`); si cambias su valor por código, añade
+  `.trigger('cp-fecha')`. Iconos PHP: `icono("nombre")`. Estilos:
   `public/css/copeba-app.css`. Si algo se repite en dos pantallas, conviértelo en recurso compartido.
 - Español en código, comentarios, mensajes y commits.
 - Autorización siempre en el servidor; ocultar botones no basta.

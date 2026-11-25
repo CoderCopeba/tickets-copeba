@@ -29,7 +29,7 @@ $(function () {
     $('#periodos').on('click', 'button', function () {
         $(this).addClass('activa').siblings().removeClass('activa');
         var p = periodo($(this).data('p'));
-        $('#desde').val(p.desde); $('#hasta').val(p.hasta);
+        $('#desde').val(p.desde).trigger('cp-fecha'); $('#hasta').val(p.hasta).trigger('cp-fecha');
         cargar();
     });
     $('#desde, #hasta').on('change', function () { $('#periodos button').removeClass('activa'); cargar(); });
@@ -39,7 +39,7 @@ $(function () {
     /* Por defecto, los últimos 6 meses: así la tendencia tiene sentido */
     $('#periodos button[data-p="6m"]').addClass('activa').siblings().removeClass('activa');
     var p = periodo('6m');
-    $('#desde').val(p.desde); $('#hasta').val(p.hasta);
+    $('#desde').val(p.desde).trigger('cp-fecha'); $('#hasta').val(p.hasta).trigger('cp-fecha');
     cargar();
 });
 

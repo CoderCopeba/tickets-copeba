@@ -743,3 +743,30 @@ body.cp-cargando-reporte .cp-kpis, body.cp-cargando-reporte .cp-grafica, body.cp
 .cp-accesos svg { color: var(--cp-verde-oscuro); flex: none; }
 .cp-panel-admin { margin-bottom: 28px; }
 .cp-enlace { white-space: nowrap; }
+
+/* ===== Calendario propio (Copeba.calendario, reemplaza al del navegador) ===== */
+.cp-cal-contenedor { position: relative; }
+.cp-cal-boton { width: auto; min-width: 140px; text-align: left; cursor: pointer; padding-right: 36px;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E") no-repeat right 11px center; }
+.cp-cal-boton.vacio { color: #9aa1ad; }
+.cp-cal { position: absolute; z-index: 1000; top: calc(100% + 6px); right: 0; width: 290px; padding: 12px;
+    background: #fff; border: 1px solid var(--cp-borde); border-radius: var(--cp-radio);
+    box-shadow: 0 10px 30px rgba(29, 36, 51, .16); font-size: 13px; color: var(--cp-texto); text-align: left; }
+.cp-cal[hidden] { display: none; }
+.cp-cal-cabecera { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.cp-cal-cabecera select { flex: 1; height: 32px; padding: 0 6px; border: 1px solid var(--cp-borde); border-radius: 6px;
+    background: #fff; font: inherit; font-weight: 700; color: var(--cp-texto); text-transform: capitalize; cursor: pointer; }
+.cp-cal-anio { flex: 0 0 76px !important; }
+.cp-cal-flecha { width: 32px; height: 32px; border: 1px solid var(--cp-borde); border-radius: 6px; background: #fff;
+    font-size: 18px; line-height: 1; color: var(--cp-texto); cursor: pointer; }
+.cp-cal-flecha:hover { background: var(--cp-verde-suave); }
+.cp-cal-semana, .cp-cal-dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.cp-cal-semana span { padding: 4px 0; font-size: 11px; font-weight: 700; color: var(--cp-texto-suave); }
+.cp-cal-dias button { height: 34px; border: 0; border-radius: 6px; background: transparent; font: inherit; color: var(--cp-texto); cursor: pointer; }
+.cp-cal-dias button:hover, .cp-cal-dias button:focus-visible { background: var(--cp-verde-suave); outline: none; }
+.cp-cal-dias button.hoy { box-shadow: inset 0 0 0 1px var(--cp-verde-oscuro); font-weight: 700; }
+.cp-cal-dias button.elegido { background: var(--cp-verde-oscuro); color: #fff; font-weight: 700; }
+.cp-cal-pie { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--cp-borde); }
+.cp-cal-pie button { border: 0; background: none; font: inherit; font-weight: 600; color: var(--cp-azul-medio); cursor: pointer; padding: 4px 6px; }
+.cp-cal-pie button:hover { text-decoration: underline; }
+@media print { .cp-cal { display: none !important; } }
