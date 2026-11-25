@@ -217,13 +217,25 @@
             return $sql->fetchAll(PDO::FETCH_ASSOC);
         }
 
-        /* Datos mínimos de una cuenta activa, o null si no existe / está desactivada */
-        public function cuenta_activa($usu_id){
-            $sql = parent::conexion()->prepare("SELECT rol_id, usu_nom, usu_ape, usu_pass_temporal FROM tm_usuario WHERE usu_id = ? AND est = 1");
-            $sql->execute(array((int)$usu_id));
+        /* Datos mínimos de una cuenta activa, o null si no existe / está desactivada.
+           En la MISMA consulta trae si atiende tickets (área que atiende) y si es
+           responsable de $area_reportes: así cada petición valida sesión y permisos
+           con un solo viaje a la base (cada viaje a la nube cuesta ~150 ms). */
+        public function cuenta_activa($usu_id, $area_reportes = ""){
+            $sql = parent::conexion()->prepare("
+                SELECT u.rol_id, u.usu_nom, u.usu_ape, u.usu_pass_temporal,
+                       EXISTS(SELECT 1 FROM td_area_usuario au INNER JOIN tm_area a ON a.area_id = au.area_id
+                              WHERE au.usu_id = u.usu_id AND au.est = 1 AND a.est = 1 AND a.area_atiende = 1) AS atiende,
+                       EXISTS(SELECT 1 FROM td_area_usuario au INNER JOIN tm_area a ON a.area_id = au.area_id
+                              WHERE au.usu_id = u.usu_id AND au.est = 1 AND au.fun_id = 1 AND a.area_nom = ?) AS responsable_reportes
+                FROM tm_usuario u
+                WHERE u.usu_id = ? AND u.est = 1");
+            $sql->execute(array((string)$area_reportes, (int)$usu_id));
             $f = $sql->fetch(PDO::FETCH_ASSOC);
             if (!$f) { return null; }
             $f["rol_id"] = (int)$f["rol_id"];
+            $f["atiende"] = (int)$f["atiende"] === 1;
+            $f["responsable_reportes"] = (int)$f["responsable_reportes"] === 1;
             return $f;
         }
 

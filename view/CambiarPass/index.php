@@ -44,8 +44,8 @@
                 <label for="pass_nueva">Nueva contraseña</label>
                 <div class="cp-input">
                     <svg class="cp-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-                    <input type="password" id="pass_nueva" name="pass_nueva" minlength="<?php echo Usuario::PASS_MINIMO; ?>
-                    <button type="button" class="cp-ojo" data-ver="pass_nueva" aria-label="Mostrar contraseña" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button>" autocomplete="new-password" required autofocus>
+                    <input type="password" id="pass_nueva" name="pass_nueva" minlength="<?php echo Usuario::PASS_MINIMO; ?>" autocomplete="new-password" required autofocus>
+                    <button type="button" class="cp-ojo" data-ver="pass_nueva" aria-label="Mostrar contraseña" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
                 </div>
             </div>
             <div class="cp-campo">

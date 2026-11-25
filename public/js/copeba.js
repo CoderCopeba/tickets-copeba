@@ -194,10 +194,118 @@ var Copeba = (function ($) {
         return $('<span class="cp-estado">').addClass(CLASE_ESTADO[texto] || 'abierto').text(texto);
     }
 
+    /* ---------- Calendario propio para <input type="date"> ----------
+       El calendario del navegador solo avanza con la rueda y no muestra bien en qué
+       mes vas. Este muestra siempre mes y año (con listas para saltar a cualquiera),
+       flechas, "Hoy" y "Borrar". El <input> original queda oculto y conserva el valor
+       en formato AAAA-MM-DD, así el resto del código no cambia (.val() y 'change').
+       Se aplica solo a todo input[type=date] al cargar la página. Si cambias el valor
+       por código, avisa con: $('#campo').val('2026-01-31').trigger('cp-fecha'); */
+    var MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+                 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    var DIAS = ['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO'];
+
+    function dosDigitos(n) { return (n < 10 ? '0' : '') + n; }
+    function aIso(d) { return d.getFullYear() + '-' + dosDigitos(d.getMonth() + 1) + '-' + dosDigitos(d.getDate()); }
+    function deIso(v) {
+        var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || '');
+        return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+    }
+
+    function calendario(input) {
+        var $in = $(input);
+        if ($in.data('cp-calendario')) { return; }
+        $in.data('cp-calendario', true);
+
+        var $boton = $('<button type="button" class="cp-control cp-cal-boton" aria-haspopup="dialog">');
+        var $panel = $('<div class="cp-cal" role="dialog" aria-label="Elegir fecha" hidden>');
+        var $mes = $('<select class="cp-cal-mes" aria-label="Mes">');
+        var $anio = $('<select class="cp-cal-anio" aria-label="Año">');
+        var $rejilla = $('<div class="cp-cal-dias">');
+        var visto = new Date();
+
+        MESES.forEach(function (n, i) { $mes.append($('<option>').val(i).text(n)); });
+        var esteAnio = new Date().getFullYear();
+        for (var a = esteAnio + 1; a >= esteAnio - 10; a--) { $anio.append($('<option>').val(a).text(a)); }
+
+        $panel.append(
+            $('<div class="cp-cal-cabecera">').append(
+                $('<button type="button" class="cp-cal-flecha" data-paso="-1" aria-label="Mes anterior">').text('‹'),
+                $mes, $anio,
+                $('<button type="button" class="cp-cal-flecha" data-paso="1" aria-label="Mes siguiente">').text('›')
+            ),
+            $('<div class="cp-cal-semana">').append(DIAS.map(function (d) { return $('<span>').text(d); })),
+            $rejilla,
+            $('<div class="cp-cal-pie">').append(
+                $('<button type="button" data-accion="borrar">').text('Borrar'),
+                $('<button type="button" data-accion="hoy">').text('Hoy')
+            )
+        );
+
+        $in.attr('type', 'hidden').after($boton, $panel);
+        $in.parent().addClass('cp-cal-contenedor');
+
+        function mostrarValor() {
+            var d = deIso($in.val());
+            $boton.text(d ? fecha($in.val()) : 'dd/mm/aaaa').toggleClass('vacio', !d);
+        }
+
+        function pintar() {
+            var anio = visto.getFullYear(), m = visto.getMonth();
+            if (!$anio.find('option[value="' + anio + '"]').length) {
+                $anio.append($('<option>').val(anio).text(anio));
+            }
+            $mes.val(m); $anio.val(anio);
+            var elegido = $in.val(), hoy = aIso(new Date());
+            var inicio = (new Date(anio, m, 1).getDay() + 6) % 7;   /* semana empieza en lunes */
+            var total = new Date(anio, m + 1, 0).getDate();
+            $rejilla.empty();
+            for (var i = 0; i < inicio; i++) { $rejilla.append('<span></span>'); }
+            for (var dia = 1; dia <= total; dia++) {
+                var iso = aIso(new Date(anio, m, dia));
+                $rejilla.append($('<button type="button">').text(dia).attr('data-iso', iso)
+                    .toggleClass('elegido', iso === elegido).toggleClass('hoy', iso === hoy));
+            }
+        }
+
+        function abrir() {
+            visto = deIso($in.val()) || new Date();
+            visto.setDate(1);
+            pintar();
+            $panel.prop('hidden', false);
+            $rejilla.find('.elegido, .hoy').first().trigger('focus');
+        }
+        function cerrar() { $panel.prop('hidden', true); }
+        function elegir(iso) {
+            $in.val(iso).trigger('change');
+            mostrarValor();
+            cerrar();
+            $boton.trigger('focus');
+        }
+
+        $boton.on('click', function () { if ($panel.prop('hidden')) { abrir(); } else { cerrar(); } });
+        $panel.on('click', '.cp-cal-flecha', function () {
+            visto.setMonth(visto.getMonth() + Number($(this).data('paso'))); pintar();
+        });
+        $mes.on('change', function () { visto.setMonth(Number($mes.val())); pintar(); });
+        $anio.on('change', function () { visto.setFullYear(Number($anio.val())); pintar(); });
+        $rejilla.on('click', 'button', function () { elegir($(this).attr('data-iso')); });
+        $panel.on('click', '[data-accion="hoy"]', function () { elegir(aIso(new Date())); });
+        $panel.on('click', '[data-accion="borrar"]', function () { elegir(''); });
+        $panel.on('keydown', function (e) { if (e.key === 'Escape') { cerrar(); $boton.trigger('focus'); } });
+        $(document).on('mousedown', function (e) {
+            if (!$panel.prop('hidden') && !$(e.target).closest($panel.add($boton)).length) { cerrar(); }
+        });
+        $in.on('cp-fecha', mostrarValor);
+        mostrarValor();
+    }
+
+    $(function () { $('input[type="date"]').each(function () { calendario(this); }); });
+
     return {
         exito: exito, aviso: aviso, error: error, confirmar: confirmar, pedirTexto: pedirTexto, dialogo: dialogo,
         leer: leer, enviar: enviar,
-        editor: editor,
+        editor: editor, calendario: calendario,
         param: param, folio: folio, fecha: fecha, hora: hora, iniciales: iniciales, estado: estado
     };
 })(jQuery);
