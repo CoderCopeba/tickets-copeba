@@ -37,7 +37,7 @@ $(function () {
                 return $c;
             } },
             { titulo: 'Integrantes', clase: 'cp-mono', render: function (a) { return a.miembros; } },
-            { titulo: 'Acciones', clase: 'cp-der cp-acciones-fila', render: function (a) {
+            { titulo: 'Acciones', orden: false, clase: 'cp-der cp-acciones-fila', render: function (a) {
                 return $('<span>').append(
                     boton('miembros', a.area_id, 'Integrantes'),
                     boton('editar', a.area_id, 'Editar'),

@@ -12,12 +12,13 @@
 <input type="hidden" id="admin_idx" value="<?php echo (es_admin() && !viendo_como()) ? 1 : 0; ?>">
 
 <?php if (viendo_como()) { ?>
-<!-- "Ver como": aviso permanente y salida -->
+<!-- "Ver como": marco verde en toda la pantalla y aviso pequeño con la salida -->
+<div class="cp-vercomo-marco" aria-hidden="true"></div>
 <div class="cp-vercomo" role="status">
     <span>
-        <?php echo icono("perfil", 16, 2); ?>
-        Estás viendo como <strong><?php echo e(trim(($_SESSION["usu_nom"] ?? "")." ".($_SESSION["usu_ape"] ?? ""))); ?></strong>
-        · solo lectura · tú eres <?php echo e($_SESSION["ver_como_nombre"] ?? ""); ?>
+        <?php echo icono("perfil", 15, 2); ?>
+        Viendo como <strong><?php echo e(trim(($_SESSION["usu_nom"] ?? "")." ".($_SESSION["usu_ape"] ?? ""))); ?></strong>
+        <small>Solo lectura · tú eres <?php echo e($_SESSION["ver_como_nombre"] ?? ""); ?></small>
     </span>
     <button type="button" class="cp-btn cp-btn-chico" id="cp_btn_volver">Volver a mi cuenta</button>
 </div>

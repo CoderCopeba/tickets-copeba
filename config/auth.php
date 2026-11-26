@@ -183,6 +183,7 @@ function operacion_de_lectura(){
         "usuario.php" => array("listar", "mostrar", "combo", "control_listar", "historial"),
         "area.php"    => array("mis_areas", "catalogos", "miembros", "membresias"),
         "cuenta.php"  => array("volver"),
+        "tarea.php"   => array("lista", "personas", "detalle"),
     );
     $archivo = basename($_SERVER["SCRIPT_NAME"] ?? "");
     $op = (string)($_GET["op"] ?? "");

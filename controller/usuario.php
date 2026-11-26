@@ -73,6 +73,7 @@
             }
 
             try {
+                $usuario->liberar_usuario_inactivo($usu_usuario);
                 if($es_alta){
                     $usuario->insert_usuario($_POST["usu_nom"],$_POST["usu_ape"],$usu_usuario,$_POST["usu_correo"],$usu_pass,$rol_id);
                     $usu_id = $usuario->id_por_usuario($usu_usuario);

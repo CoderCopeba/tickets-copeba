@@ -45,6 +45,23 @@ function html_url_segura($url, array $esquemas){
     return true; /* relativa o //host */
 }
 
+/* Imagen pegada en el editor (capturas de pantalla), guardada dentro del propio texto:
+   así la ve todo el equipo, a diferencia de los adjuntos (que quedan en cada computadora).
+   Solo PNG, JPEG, GIF o WEBP en base64 válido (nunca SVG, que puede llevar código) y
+   hasta HTML_IMAGEN_MAX bytes; el navegador ya la reduce antes de enviarla. */
+const HTML_IMAGEN_MAX = 2000000;
+/* Tope del texto completo (con sus imágenes): una fila de TiDB admite ~6 MB */
+const HTML_TEXTO_MAX = 5000000;
+function html_demasiado_grande($html){
+    return strlen((string)$html) > HTML_TEXTO_MAX;
+}
+
+function html_imagen_incrustada($src){
+    $src = (string)$src;
+    return strlen($src) <= HTML_IMAGEN_MAX
+        && preg_match('#^data:image/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/]++={0,2}$#', $src) === 1;
+}
+
 function html_estilo_seguro($estilo){
     $salida = array();
     foreach (explode(";", (string)$estilo) as $decl){
@@ -120,7 +137,7 @@ function html_limpiar_nodo(DOMNode $nodo){
             if ($conservar && $n === "href"){
                 $conservar = html_url_segura($valor, array("http", "https", "mailto"));
             } elseif ($conservar && $n === "src"){
-                $conservar = html_url_segura($valor, array("http", "https"));
+                $conservar = html_imagen_incrustada($valor) || html_url_segura($valor, array("http", "https"));
             } elseif ($conservar && $n === "style"){
                 $valor = html_estilo_seguro($valor);
                 $conservar = ($valor !== "");

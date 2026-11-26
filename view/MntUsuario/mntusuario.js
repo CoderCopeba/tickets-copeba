@@ -44,7 +44,7 @@ $(function () {
                 return $a;
             } },
             { titulo: 'Cuenta', render: function (u) { return u.admin ? $('<span class="cp-estado cerrado">').text('Administrador') : $('<span class="cp-suave">').text('Colaborador'); } },
-            { titulo: 'Acciones', clase: 'cp-der cp-acciones-fila', render: function (u) {
+            { titulo: 'Acciones', orden: false, clase: 'cp-der cp-acciones-fila', render: function (u) {
                 return $('<span class="cp-iconos-fila">').append(
                     u.admin ? null : botonIcono('vercomo', u.id, 'Ver como esta persona (solo lectura)', ICONOS.vercomo),
                     botonIcono('areas', u.id, 'Áreas de trabajo', ICONOS.areas),

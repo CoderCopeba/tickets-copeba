@@ -24,12 +24,12 @@ $(function () {
     pestanas.push({ texto: 'Este mes', filtro: function (t) { return esteMes(t.fecha); } });
 
     var columnas = [
-        { titulo: 'Folio', clase: 'cp-mono', render: function (t) { return Copeba.folio(t.id); } },
+        { titulo: 'Folio', clase: 'cp-mono', orden: function (t) { return t.id; }, render: function (t) { return Copeba.folio(t.id); } },
         { titulo: 'Título', render: function (t) {
-            return $('<a class="cp-link-tabla">').attr('href', '../DetalleTicket/?ID=' + encodeURIComponent(t.id)).text(t.titulo);
+            return $('<strong class="cp-tarea-nombre">').text(t.titulo);   /* se abre con el ojo */
         } },
         { titulo: 'Categoría', clase: 'cp-suave', render: function (t) { return t.categoria; } },
-        { titulo: 'Urgencia', render: function (t) { return $('<span class="cp-prioridad">').addClass('p' + t.prio_id).text(t.prioridad); } },
+        { titulo: 'Urgencia', orden: function (t) { return Number(t.prio_id); }, render: function (t) { return $('<span class="cp-prioridad">').addClass('p' + t.prio_id).text(t.prioridad); } },
         { titulo: 'Estado', render: function (t) {
             var chip = Copeba.estado(t.estado);
             if (atiende && t.estado === 'Cerrado') {    /* reabrir desde la lista */
@@ -44,7 +44,7 @@ $(function () {
             }
             return $('<span class="cp-estado pendiente">').text('Pendiente');
         } },
-        { titulo: 'Creado', clase: 'cp-mono', render: function (t) { return Copeba.fecha(t.fecha); } },
+        { titulo: 'Creado', clase: 'cp-mono', orden: function (t) { return t.fecha; }, render: function (t) { return Copeba.fecha(t.fecha); } },
         { titulo: '', clase: 'cp-der', render: function (t) {
             return $('<a class="cp-ver">').attr({ href: '../DetalleTicket/?ID=' + encodeURIComponent(t.id), title: 'Ver ticket', 'aria-label': 'Ver ticket ' + Copeba.folio(t.id) }).html(OJO);
         } }
