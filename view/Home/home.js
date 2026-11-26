@@ -151,6 +151,47 @@
         });
     }
 
+    /* ---------- Mi día (todos los Inicios) ---------- */
+    var ESTADO_TAREA = { pendiente: 'Pendiente', proceso: 'En proceso', devuelta: 'Devuelta' };
+
+    function chipDia(fecha, hoyIso) {
+        var f = String(fecha || '').slice(0, 10);
+        return f < hoyIso
+            ? $('<span class="cp-estado cp-dia-atrasado">').text('Atrasado · ' + Copeba.fecha(f))
+            : $('<span class="cp-estado pendiente">').text('Hoy');
+    }
+
+    function pintarMiDia(d) {
+        if (!d) { return; }
+        lista('#dia_tareas', d.tareas, 'No tienes tareas que venzan hoy.', function (t) {
+            return $('<li>').append(
+                $('<a class="cp-link-tabla" href="../Tareas/">').text(t.titulo),
+                $('<span class="cp-lista-meta">').append(
+                    chipDia(t.fecha, d.hoy),
+                    $('<span>').text((ESTADO_TAREA[t.estado] || t.estado) + ' · ' + t.detalle)
+                )
+            );
+        });
+        lista('#dia_plan', d.plan, 'Nada pendiente en tu planificación para hoy.', function (a) {
+            return $('<li>').append(
+                $('<a class="cp-link-tabla" href="../Planificacion/">').text(a.titulo),
+                $('<span class="cp-lista-meta">').append(chipDia(a.fecha, d.hoy), $('<span>').text(a.detalle))
+            );
+        });
+        if (d.criticos) {
+            lista('#dia_criticos', d.criticos, 'Ningún ticket crítico abierto. ¡Bien!', function (t) {
+                return $('<li>').append(
+                    $('<a class="cp-link-tabla">').attr('href', '../DetalleTicket/?ID=' + encodeURIComponent(t.id))
+                        .text(Copeba.folio(t.id) + ' · ' + t.titulo),
+                    $('<span class="cp-lista-meta">').append(
+                        $('<span class="cp-prioridad p4">').text('Crítica'),
+                        $('<span>').text(t.detalle + ' · ' + Copeba.fecha(t.fecha))
+                    )
+                );
+            });
+        }
+    }
+
     $(function () {
         bienvenida();
         cargar();
@@ -169,6 +210,7 @@
             .always(function () { cargando = false; })
             .done(function (datos) {
                 if (typeof datos === 'string') { datos = JSON.parse(datos); }
+                pintarMiDia(datos.mi_dia);
                 if (silencioso) {
                     pintarKpis(datos.totales);
                     pintarTabla('asignados', datos.asignados, 'No tienes tickets abiertos asignados.');
@@ -187,6 +229,7 @@
                 if (silencioso) { return; }
                 $('[data-tabla] ').html('<tr><td colspan="7" class="cp-vacio">No se pudo cargar la información. Recarga la página.</td></tr>');
                 $('#kpis').removeClass('cp-cargando');
+                $('#dia_tareas, #dia_plan, #dia_criticos').html('<li class="cp-vacio">No se pudo cargar.</li>');
             });
     }
 })();

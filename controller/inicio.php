@@ -16,7 +16,8 @@
             } else {
                 $datos = $inicio->resumen_usuario(usuario_actual_id());
             }
-            $datos["vista"] = es_admin() ? "admin" : (es_soporte() ? "soporte" : "usuario");
+            $datos["mi_dia"] = $inicio->mi_dia(usuario_actual_id(), es_soporte());
+            $datos["vista"] =es_admin() ? "admin" : (es_soporte() ? "soporte" : "usuario");
             echo json_encode($datos);
             break;
 
