@@ -38,7 +38,10 @@ class Tarea extends Conectar {
     /* ---------- Grupos y personas ---------- */
 
     /* Grupos donde la persona puede asignar: [{area_id, area_nom, sede_id|null, sede_nom|null}]
-       sede_id va solo si el área existe por sede (cada agencia tiene la suya). */
+       sede_id va solo si el área existe por sede (cada agencia tiene la suya).
+       Dirige quien es Responsable o Suplente del área, y TODO integrante de la
+       Jefatura de Agencia (cada agencia se maneja sola; su jefe asigna a su personal
+       aunque en el sistema figure con otra función). */
     public function grupos_asignables($usu_id, $es_admin){
         if ($es_admin){
             return $this->todos("
@@ -52,9 +55,9 @@ class Tarea extends Conectar {
             FROM td_area_usuario au
             INNER JOIN tm_area a ON a.area_id = au.area_id AND a.est = 1
             INNER JOIN tm_sede s ON s.sede_id = au.sede_id
-            WHERE au.usu_id = ? AND au.est = 1 AND au.fun_id IN (?, ?)
+            WHERE au.usu_id = ? AND au.est = 1 AND (au.fun_id IN (?, ?) OR a.area_nom = ?)
             ORDER BY a.area_nom, sede_nom",
-            array((int)$usu_id, self::FUN_RESPONSABLE, self::FUN_SUPLENTE));
+            array((int)$usu_id, self::FUN_RESPONSABLE, self::FUN_SUPLENTE, self::AREA_JEFATURA_AGENCIA));
     }
 
     /* ¿Está el grupo (área + sede) entre los que puede asignar? Normaliza sede_id. */
@@ -162,9 +165,10 @@ class Tarea extends Conectar {
         if (!$es_admin){
             $sql .= " AND (t.usu_crea = ? OR EXISTS(
                         SELECT 1 FROM td_area_usuario au
-                        WHERE au.usu_id = ? AND au.est = 1 AND au.fun_id IN (?, ?)
+                        WHERE au.usu_id = ? AND au.est = 1
+                          AND (au.fun_id IN (?, ?) OR EXISTS(SELECT 1 FROM tm_area j WHERE j.area_id = au.area_id AND j.area_nom = ?))
                           AND au.area_id = t.area_id AND (t.sede_id IS NULL OR t.sede_id = au.sede_id)))";
-            $p = array((int)$usu_id, (int)$usu_id, self::FUN_RESPONSABLE, self::FUN_SUPLENTE);
+            $p = array((int)$usu_id, (int)$usu_id, self::FUN_RESPONSABLE, self::FUN_SUPLENTE, self::AREA_JEFATURA_AGENCIA);
         }
         $sql .= " GROUP BY t.tarea_id, t.tarea_titulo, t.fech_limite, t.fech_crea, t.prio_id, p.prio_nom,
                            a.area_nom, s.sede_nom, c.usu_nom, c.usu_ape
