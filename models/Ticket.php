@@ -107,6 +107,15 @@
             return $sql->execute(array((int)$usu_asig, (int)$tick_id));
         }
 
+        /* Toma el ticket solo si sigue libre: el WHERE lo hace atómico, así dos agentes
+           que pulsan a la vez no se lo quedan los dos. Devuelve true si lo obtuvo. */
+        public function tomar_si_libre($tick_id, $usu_id){
+            $sql = parent::conexion()->prepare("UPDATE tm_ticket SET usu_asig = ?, fech_asig = now()
+                       WHERE tick_id = ? AND usu_asig IS NULL AND tick_estado <> 'Cerrado'");
+            $sql->execute(array((int)$usu_id, (int)$tick_id));
+            return $sql->rowCount() > 0;
+        }
+
         /* Todo lo que muestra la pantalla de detalle (un solo registro) */
         public function detalle($tick_id){
             $sql = parent::conexion()->prepare("

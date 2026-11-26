@@ -536,6 +536,7 @@ select.cp-control {
 .cp-buscar { max-width: 320px; height: 38px; }
 .cp-acciones-fila { white-space: nowrap; }
 .cp-acciones-fila .cp-btn + .cp-btn { margin-left: 4px; }
+.cp-btn-resolver { padding: 6px 12px; margin-right: 6px; vertical-align: middle; }
 .cp-btn-peligro:hover { border-color: var(--cp-rojo); color: var(--cp-rojo); }
 .cp-check { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; font-weight: 400; cursor: pointer; }
 .cp-check input { width: 16px; height: 16px; accent-color: var(--cp-verde-oscuro); }
