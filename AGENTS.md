@@ -106,7 +106,8 @@ Si el diagnóstico dice que faltan migraciones, avisa a Informática; no las eje
    (`models/Usuario.php`, `view/MntUsuario`), tipos de cuenta (`tm_rol`: 1 Colaborador,
    3 Administrador del sistema), áreas y sedes (`models/Area.php`, `view/MntArea`), cuentas y
    contraseñas temporales (`view/ControlUsuarios`), tickets con bitácora, prioridades y SLA,
-   reportes (`view/Reportes`), "Ver como", adjuntos y correo.
+   reportes (`view/Reportes`), "Ver como", adjuntos, correo y **tareas por área**
+   (`models/Tarea.php`, `view/Tareas`: el Responsable o Suplente de un área asigna tareas a su gente).
    **Los permisos vienen del área**: quien pertenece a un área que atiende tickets (Informática)
    los gestiona. Usa `es_soporte()`, `es_admin()`, `puede_ver_reportes()`, `requiere_soporte()`;
    no compares números de rol a mano.

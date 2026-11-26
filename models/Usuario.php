@@ -66,7 +66,8 @@
         public function existe_usuario($usu_usuario, $excluir_usu_id = null){
             $conectar= parent::conexion();
             parent::set_names();
-            $sql = "SELECT COUNT(*) AS total FROM tm_usuario WHERE usu_usuario = ?";
+            /* Solo cuentas activas: el nombre de una cuenta eliminada se puede volver a usar */
+            $sql = "SELECT COUNT(*) AS total FROM tm_usuario WHERE usu_usuario = ? AND est = 1";
             if ($excluir_usu_id !== null && $excluir_usu_id !== ""){
                 $sql .= " AND usu_id <> ?";
             }
@@ -185,9 +186,22 @@
 
         /* Baja lógica (la cuenta se conserva por el historial). Antes: procedimiento sp_d_usuario_01 */
         public function delete_usuario($usu_id){
-            $sql = parent::conexion()->prepare("UPDATE tm_usuario SET est = 0, fech_elim = now() WHERE usu_id = ?");
+            /* La cuenta se desactiva (se conservan su historial y sus tickets) y su nombre de
+               usuario queda libre: "juan" pasa a "juan~15" (el "~" no es válido en un nombre
+               real, así que nunca choca con uno nuevo; caben 30 caracteres). */
+            $sql = parent::conexion()->prepare("
+                UPDATE tm_usuario SET est = 0, fech_elim = now(),
+                       usu_usuario = CONCAT(LEFT(usu_usuario, 29 - CHAR_LENGTH(usu_id)), '~', usu_id)
+                WHERE usu_id = ? AND est = 1");
             $sql->execute(array((int)$usu_id));
             return array();
+        }
+
+        /* Cuentas eliminadas ANTES de este cambio conservan su nombre: se libera al reutilizarlo */
+        public function liberar_usuario_inactivo($usu_usuario){
+            parent::conexion()->prepare("
+                UPDATE tm_usuario SET usu_usuario = CONCAT(LEFT(usu_usuario, 29 - CHAR_LENGTH(usu_id)), '~', usu_id)
+                WHERE usu_usuario = ? AND est = 0")->execute(array((string)$usu_usuario));
         }
 
         /* Cuentas activas, sin la contraseña. Antes: procedimiento sp_l_usuario_01 */

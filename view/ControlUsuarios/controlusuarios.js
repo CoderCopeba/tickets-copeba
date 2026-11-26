@@ -37,13 +37,13 @@ $(function () {
                 return $('<span>').append($('<span>').text(c.areas || 'Sin área'), $('<small class="cp-suave cp-bloque">').text(c.sede));
             } },
             { titulo: 'Contraseña', render: estadoPass },
-            { titulo: 'Último movimiento', render: function (c) {
+            { titulo: 'Último movimiento', orden: function (c) { return c.ultimo ? c.ultimo.fecha : ''; }, render: function (c) {
                 if (!c.ultimo) { return $('<span class="cp-suave">').text('—'); }
                 return $('<span>').append(
                     $('<span>').text(EVENTOS[c.ultimo.evento] || c.ultimo.evento),
                     $('<small class="cp-suave cp-bloque">').text(Copeba.fecha(c.ultimo.fecha) + ' ' + Copeba.hora(c.ultimo.fecha) + (c.ultimo.actor ? ' · ' + c.ultimo.actor : '')));
             } },
-            { titulo: 'Acciones', clase: 'cp-der cp-acciones-fila', render: function (c) {
+            { titulo: 'Acciones', orden: false, clase: 'cp-der cp-acciones-fila', render: function (c) {
                 return $('<span>').append(
                     (esAdmin && !c.admin) ? $('<button type="button" class="cp-btn cp-btn-borde cp-btn-chico">').attr({ 'data-accion': 'vercomo', 'data-id': c.id, title: 'Ver el sistema como esta persona (solo lectura)' }).text('Ver como') : null,
                     $('<button type="button" class="cp-btn cp-btn-borde cp-btn-chico">').attr({ 'data-accion': 'historial', 'data-id': c.id }).text('Historial'),

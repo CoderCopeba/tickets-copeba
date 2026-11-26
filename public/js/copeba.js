@@ -85,6 +85,13 @@ var Copeba = (function ($) {
         if (abrir === false) { if (d.open) { d.close(); } return; }
         if (!d.dataset.cpCierre) {          /* "close" no burbujea: se engancha una vez */
             d.dataset.cpCierre = '1';
+            /* X para cerrar en la esquina, igual en todas las ventanas */
+            var $cab = $(d).find('> header, > form > header').first();
+            if ($cab.length && !$cab.find('.cp-dialogo-x').length) {
+                $cab.append($('<button type="button" class="cp-dialogo-x" aria-label="Cerrar">').html(
+                    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>')
+                    .on('click', function () { d.close(); }));
+            }
             d.addEventListener('close', function () {
                 if (!$('dialog.cp-dialogo[open]').length) { $('body').removeClass('cp-con-dialogo'); }
             });
@@ -144,20 +151,72 @@ var Copeba = (function ($) {
         ['fontsize', ['fontsize']],
         ['color', ['color']],
         ['para', ['ul', 'ol', 'paragraph']],
-        ['height', ['height']]
+        ['height', ['height']],
+        ['insert', ['link', 'picture']]
     ];
 
-    var BARRA_SIMPLE = [['style', ['bold', 'italic']], ['para', ['ul', 'ol']], ['insert', ['link']]];
+    var BARRA_SIMPLE = [['style', ['bold', 'italic']], ['para', ['ul', 'ol']], ['insert', ['link', 'picture']]];
+
+    /* Imágenes en el texto (capturas de un error): se reducen en el navegador a un tamaño
+       razonable y van dentro del propio texto (el servidor solo acepta PNG/JPEG/GIF/WEBP,
+       config/html.php). Se pueden pegar con Ctrl+V, arrastrar o elegir con el botón. */
+    var IMAGEN_LADO_MAX = 1600;                 /* px del lado mayor */
+    var IMAGEN_BYTES_MAX = 1900000;             /* el servidor admite hasta 2 000 000 */
+    var IMAGEN_TIPOS = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+
+    function reducirImagen(archivo, listo) {
+        if (IMAGEN_TIPOS.indexOf(archivo.type) === -1) {
+            aviso('Solo se pueden insertar imágenes PNG, JPG, GIF o WEBP.');
+            return;
+        }
+        var lector = new FileReader();
+        lector.onload = function () {
+            var img = new Image();
+            img.onload = function () {
+                var escala = Math.min(1, IMAGEN_LADO_MAX / Math.max(img.width, img.height));
+                var lienzo = document.createElement('canvas');
+                lienzo.width = Math.round(img.width * escala);
+                lienzo.height = Math.round(img.height * escala);
+                var ctx = lienzo.getContext('2d');
+                ctx.fillStyle = '#fff';                     /* fondo blanco si la PNG es transparente */
+                ctx.fillRect(0, 0, lienzo.width, lienzo.height);
+                ctx.drawImage(img, 0, 0, lienzo.width, lienzo.height);
+                /* PNG nítida para capturas pequeñas; JPEG si pesa demasiado */
+                var datos = lienzo.toDataURL('image/png');
+                var calidad = 0.85;
+                while (datos.length > IMAGEN_BYTES_MAX / 2 && calidad >= 0.45) {
+                    datos = lienzo.toDataURL('image/jpeg', calidad);
+                    calidad -= 0.1;
+                }
+                if (datos.length > IMAGEN_BYTES_MAX) { aviso('La imagen es demasiado grande. Recórtala e inténtalo de nuevo.'); return; }
+                listo(datos);
+            };
+            img.onerror = function () { aviso('No se pudo leer la imagen.'); };
+            img.src = lector.result;
+        };
+        lector.readAsDataURL(archivo);
+    }
 
     /* opciones: { barra: 'simple', ayuda: 'texto de ejemplo' } */
     function editor(selector, alto, opciones) {
         opciones = opciones || {};
-        return $(selector).summernote({
+        var $editor = $(selector);
+        return $editor.summernote({
             height: alto || 200,
             lang: 'es-ES',
             toolbar: opciones.barra === 'simple' ? BARRA_SIMPLE : BARRA_EDITOR,
             placeholder: opciones.ayuda || '',
-            disableDragAndDrop: true
+            /* Sus ventanas (enlace, imagen) van en <body>: dentro de un <dialog> quedaban
+               debajo de su propio fondo gris y bloqueaban el editor */
+            dialogsInBody: true,
+            callbacks: {
+                /* Botón de imagen, pegar (Ctrl+V) o arrastrar */
+                onImageUpload: function (archivos) {
+                    $.each(archivos, function (i, archivo) {
+                        reducirImagen(archivo, function (datos) { $editor.summernote('insertImage', datos); });
+                    });
+                }
+            }
         });
     }
 
@@ -272,7 +331,21 @@ var Copeba = (function ($) {
             visto = deIso($in.val()) || new Date();
             visto.setDate(1);
             pintar();
-            $panel.prop('hidden', false);
+            $panel.removeClass('arriba').prop('hidden', false);
+            /* Si no cabe debajo (dentro de la ventana o del cuadro que lo contiene),
+               se abre hacia arriba: así la pantalla no salta para mostrarlo */
+            var caja = $boton[0].getBoundingClientRect();
+            var limiteAbajo = window.innerHeight, limiteArriba = 0;
+            $boton.parents().each(function () {
+                var desborde = $(this).css('overflow-y');
+                if (desborde === 'auto' || desborde === 'scroll' || desborde === 'hidden') {
+                    var r = this.getBoundingClientRect();
+                    limiteAbajo = Math.min(limiteAbajo, r.bottom);
+                    limiteArriba = Math.max(limiteArriba, r.top);
+                }
+            });
+            var alto = $panel.outerHeight() + 8;
+            if (limiteAbajo - caja.bottom < alto && caja.top - limiteArriba >= alto) { $panel.addClass('arriba'); }
             $rejilla.find('.elegido, .hoy').first().trigger('focus');
         }
         function cerrar() { $panel.prop('hidden', true); }

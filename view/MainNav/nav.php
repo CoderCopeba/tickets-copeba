@@ -5,6 +5,7 @@
         array("dir" => "Home",            "texto" => "Inicio",       "icono" => "inicio",   "roles" => ROLES_VALIDOS),
         array("dir" => "NuevoTicket",     "texto" => "Nuevo ticket", "icono" => "nuevo",    "roles" => ROLES_VALIDOS),
         array("dir" => "ConsultarTicket", "texto" => "Tickets",      "icono" => "ticket",  "roles" => ROLES_VALIDOS),
+        array("dir" => "Tareas",          "texto" => "Tareas",       "icono" => "tareas",   "roles" => ROLES_VALIDOS),
         array("dir" => "Reportes",        "texto" => "Reportes",     "icono" => "reportes", "reportes" => true),
         array("dir" => "ControlUsuarios", "texto" => "Cuentas",      "icono" => "llave",    "soporte" => true),
         array("dir" => "MntUsuario",      "texto" => "Usuarios",     "icono" => "usuarios", "roles" => array(ROL_ADMIN)),

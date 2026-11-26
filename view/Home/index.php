@@ -158,7 +158,7 @@
                                     <th>Estado</th>
                                     <th>Soporte</th>
                                     <th>Fecha</th>
-                                    <th>Detalle</th>
+                                    <th data-orden="no">Detalle</th>
                                 </tr>
                             </thead>
                             <tbody data-tabla="<?php echo e($t[0]); ?>">

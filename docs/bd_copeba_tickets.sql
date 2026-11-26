@@ -1,5 +1,5 @@
 -- Esquema de COPEBA TICKETS (estructura + catálogos; sin usuarios ni tickets)
--- Actualizado: 2026-11-25 (SLA, bitácora, sedes y áreas, contraseñas temporales, área/sede/cierre del ticket)
+-- Actualizado: 2026-11-25 (SLA, bitácora, sedes y áreas, contraseñas temporales, tareas por área, área/sede/cierre del ticket)
 -- Compatible con MySQL 8 y con TiDB Cloud: utf8mb4_0900_ai_ci y SIN procedimientos almacenados.
 -- Importar en una base vacía creada con CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci.
 -- Tras importar: crear la primera cuenta Administrador con  php instalar/crear_admin.php
@@ -227,6 +227,43 @@ CREATE TABLE `tm_usuario` (
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+-- Tareas por área (migración 2026-11-25_tareas.sql)
+CREATE TABLE `tm_tarea` (
+  `tarea_id` int NOT NULL AUTO_INCREMENT,
+  `area_id` int NOT NULL,
+  `sede_id` int DEFAULT NULL COMMENT 'Sede de quien asigna si el área existe por sede; NULL = toda el área',
+  `usu_crea` int NOT NULL,
+  `prio_id` int NOT NULL DEFAULT '2',
+  `tarea_titulo` varchar(200) COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `tarea_descrip` longtext COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `fech_limite` date DEFAULT NULL,
+  `fech_crea` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `est` int NOT NULL DEFAULT '1' COMMENT '1 = vigente, 0 = anulada',
+  PRIMARY KEY (`tarea_id`),
+  KEY `ix_tm_tarea_area` (`area_id`, `est`),
+  KEY `ix_tm_tarea_crea` (`usu_crea`),
+  CONSTRAINT `fk_tm_tarea_area` FOREIGN KEY (`area_id`) REFERENCES `tm_area` (`area_id`),
+  CONSTRAINT `fk_tm_tarea_sede` FOREIGN KEY (`sede_id`) REFERENCES `tm_sede` (`sede_id`),
+  CONSTRAINT `fk_tm_tarea_usuario` FOREIGN KEY (`usu_crea`) REFERENCES `tm_usuario` (`usu_id`),
+  CONSTRAINT `fk_tm_tarea_prioridad` FOREIGN KEY (`prio_id`) REFERENCES `tm_prioridad` (`prio_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `td_tarea_usuario` (
+  `tu_id` int NOT NULL AUTO_INCREMENT,
+  `tarea_id` int NOT NULL,
+  `usu_id` int NOT NULL,
+  `tu_estado` varchar(12) COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'pendiente',
+  `tu_entrega` text COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'Comentario de quien entrega',
+  `tu_observacion` text COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'Observación de quien revisa',
+  `fech_entrega` datetime DEFAULT NULL,
+  `fech_revision` datetime DEFAULT NULL,
+  PRIMARY KEY (`tu_id`),
+  UNIQUE KEY `uq_tarea_usuario` (`tarea_id`, `usu_id`),
+  KEY `ix_td_tarea_usuario_usu` (`usu_id`, `tu_estado`),
+  CONSTRAINT `fk_tu_tarea` FOREIGN KEY (`tarea_id`) REFERENCES `tm_tarea` (`tarea_id`),
+  CONSTRAINT `fk_tu_usuario` FOREIGN KEY (`usu_id`) REFERENCES `tm_usuario` (`usu_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 INSERT INTO `tm_rol` (`rol_id`, `rol_nom`) VALUES (3,'Administrador del sistema');
 INSERT INTO `tm_rol` (`rol_id`, `rol_nom`) VALUES (1,'Colaborador');

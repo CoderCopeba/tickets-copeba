@@ -22,6 +22,8 @@
             .html('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>');
     }
 
+    $(function () { Copeba.tablaOrdenable('.cp-tabla-caja > table.cp-tabla'); });
+
     function pintarTabla(nombre, filas, textoVacio) {
         var $cuerpo = $('[data-tabla="' + nombre + '"]');
         if (!$cuerpo.length) { return; }
@@ -32,12 +34,12 @@
         }
         $.each(filas, function (_, t) {
             $cuerpo.append($('<tr>').append(
-                $('<td class="cp-mono">').text(Copeba.folio(t.tick_id)),
+                $('<td class="cp-mono">').attr('data-orden', Number(t.tick_id)).text(Copeba.folio(t.tick_id)),
                 $('<td>').text(t.tick_titulo),
                 $('<td class="cp-suave">').text(t.cat_nom),
                 $('<td>').append(Copeba.estado(t.tick_estado)),
                 $('<td>').append(soporte(t)),
-                $('<td class="cp-mono">').text(Copeba.fecha(t.fech_crea)),
+                $('<td class="cp-mono">').attr('data-orden', t.fech_crea || '').text(Copeba.fecha(t.fech_crea)),
                 $('<td>').append(botonVer(t.tick_id))
             ));
         });

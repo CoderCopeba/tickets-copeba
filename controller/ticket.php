@@ -131,6 +131,10 @@
             $cat_id       = (int)($_POST["cat_id"] ?? 0);
             $prio_id      = (int)($_POST["prio_id"] ?? Prioridad::NORMAL);
             if (!$prioridad->existe($prio_id)) { $prio_id = Prioridad::NORMAL; }
+            if (html_demasiado_grande($tick_descrip)){
+                echo json_encode(array("error" => "La descripción es demasiado grande: usa menos imágenes o recórtalas."));
+                break;
+            }
             if ($tick_titulo === "" || trim(strip_tags($tick_descrip)) === "" || $cat_id <= 0){
                 echo json_encode(array("error" => "Complete el título, la categoría y la descripción."));
                 break;
@@ -224,6 +228,9 @@
                 auth_denegar(403, "ajax", "Solo el equipo de TI puede escribir notas internas.");
             }
             $tickd_descrip = html_limpio($_POST["tickd_descrip"] ?? "");
+            if (html_demasiado_grande($tickd_descrip)){
+                ticket_error("El mensaje es demasiado grande: usa menos imágenes o recórtalas.");
+            }
             if (trim(strip_tags($tickd_descrip, "<img>")) === ""){
                 ticket_error("Escribe el mensaje antes de enviarlo.");
             }

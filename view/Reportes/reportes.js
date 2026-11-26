@@ -26,6 +26,7 @@ function periodo(clave) {
 }
 
 $(function () {
+    Copeba.tablaOrdenable('.cp-tecnicos table');
     $('#periodos').on('click', 'button', function () {
         $(this).addClass('activa').siblings().removeClass('activa');
         var p = periodo($(this).data('p'));
@@ -141,12 +142,12 @@ function pintarTecnicos(filas) {
     $.each(filas, function (_, f) {
         $t.append($('<tr>').append(
             $('<td>').append($('<strong>').text(f.nombre)),
-            $('<td class="cp-der cp-mono">').text(numero(f.asignados)),
-            $('<td>').append($('<span class="cp-barra-celda">').append(
+            $('<td class="cp-der cp-mono">').attr('data-orden', Number(f.asignados || 0)).text(numero(f.asignados)),
+            $('<td>').attr('data-orden', Number(f.resueltos || 0)).append($('<span class="cp-barra-celda">').append(
                 $('<span class="cp-barra-h-pista">').append($('<span>').css('width', (Number(f.resueltos || 0) * 100 / max) + '%')),
                 $('<span class="cp-mono">').text(numero(f.resueltos)))),
-            $('<td class="cp-der cp-mono">').text(numero(f.pendientes)),
-            $('<td class="cp-der cp-mono">').text(duracion(f.horas_promedio))
+            $('<td class="cp-der cp-mono">').attr('data-orden', Number(f.pendientes || 0)).text(numero(f.pendientes)),
+            $('<td class="cp-der cp-mono">').attr('data-orden', f.horas_promedio === null ? '' : Number(f.horas_promedio)).text(duracion(f.horas_promedio))
         ));
     });
 }

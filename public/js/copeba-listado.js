@@ -10,7 +10,10 @@
        pestanas: [{ texto: 'Todos', filtro: null }, { texto: 'Abiertos', filtro: fn(fila) }],
        buscar: fn(fila) -> texto donde buscar,
        placeholder: 'Buscar…',
-       columnas: [{ titulo, clase, render: fn(fila) -> texto | nodo jQuery }],
+       columnas: [{ titulo, clase, render: fn(fila) -> texto | nodo jQuery,
+                    orden: fn(fila) -> valor para ordenar | false (sin flecha) }],
+                                            // sin 'orden' se ordena por el texto que se ve;
+                                            // pulsar el título: ascendente -> descendente -> sin orden
        vacio: 'No hay registros.',
        exportar: { archivo: 'tickets', campos: [{ titulo, valor: fn(fila) }] },
        total: 'Total de tickets'
@@ -23,7 +26,8 @@
     var POR_PAGINA = [10, 25, 50, 100];
     var LUPA = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
     var BAJAR = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>';
-    var MAS = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+    var FLECHAS = '<svg width="8" height="12" viewBox="0 0 8 12" aria-hidden="true"><path class="cp-orden-sube" d="M4 0 8 5H0z"/><path class="cp-orden-baja" d="M4 12 0 7h8z"/></svg>';
+    var MAS ='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
 
     function leerPreferencia(id, def) {
         try { var v = Number(localStorage.getItem('cp_por_pagina_' + id)); return POR_PAGINA.indexOf(v) !== -1 ? v : def; }
@@ -39,6 +43,7 @@
 
     Copeba.listado = function (contenedor, o) {
         var filas = [], visibles = [], pagina = 1, pestana = 0, cargado = false;
+        var ordenCol = -1, ordenDir = 1;          /* columna por la que se ordena y sentido (1 / -1) */
         var porPagina = leerPreferencia(o.id || 'general', o.porPagina || 10);
         var $c = $(contenedor).addClass('cp-tarjeta cp-listado').empty();
 
@@ -70,7 +75,18 @@
 
         /* ---- Tabla ---- */
         var $thead = $('<tr>');
-        $.each(o.columnas, function (_, col) { $thead.append($('<th>').addClass(col.clase || '').text(col.titulo || '')); });
+        /* Los encabezados con título llevan flechita y ordenan al pulsarlos */
+        $.each(o.columnas, function (i, col) {
+            var $th = $('<th>').addClass(col.clase || '');
+            if (col.titulo && col.orden !== false) {
+                $th.attr('aria-sort', 'none').append(
+                    $('<button type="button" class="cp-orden">').attr({ 'data-col': i, title: 'Ordenar por ' + col.titulo.toLowerCase() })
+                        .append($('<span>').text(col.titulo), $('<i>').html(FLECHAS)));
+            } else {
+                $th.text(col.titulo || '');
+            }
+            $thead.append($th);
+        });
         var $tbody = $('<tbody>');
         var $tabla = $('<div class="cp-tabla-caja">').append($('<table class="cp-tabla">').append($('<thead>').append($thead), $tbody));
 
@@ -98,6 +114,15 @@
         $select.on('change', function () {
             porPagina = Number($select.val()); guardarPreferencia(o.id || 'general', porPagina); pagina = 1; pintar();
         });
+        $thead.on('click', '.cp-orden', function () {
+            var i = Number($(this).attr('data-col'));
+            if (ordenCol !== i) { ordenCol = i; ordenDir = 1; }
+            else if (ordenDir === 1) { ordenDir = -1; }
+            else { ordenCol = -1; }
+            $thead.find('.cp-orden').closest('th').attr('aria-sort', 'none');
+            if (ordenCol >= 0) { $thead.children().eq(ordenCol).attr('aria-sort', ordenDir === 1 ? 'ascending' : 'descending'); }
+            pagina = 1; filtrar();
+        });
         $paginas.on('click', 'button[data-p]', function () { pagina = Number($(this).data('p')); pintar(); $c[0].scrollIntoView({ block: 'nearest' }); });
 
         /* ---- Lógica ---- */
@@ -108,7 +133,29 @@
                 if (f && !f(fila)) { return false; }
                 return !q || sinAcentos(o.buscar ? o.buscar(fila) : JSON.stringify(fila)).indexOf(q) !== -1;
             });
+            ordenar();
             pintar();
+        }
+
+        /* Valor para ordenar: el que indica la columna o, si no, el texto que se ve */
+        function valorOrden(col, fila) {
+            if (typeof col.orden === 'function') { return col.orden(fila); }
+            var v = col.render(fila);
+            return (v instanceof $ || (v && v.nodeType)) ? $.trim($(v).text()) : v;
+        }
+        var COMPARAR = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
+        function ordenar() {
+            if (ordenCol < 0) { return; }
+            var col = o.columnas[ordenCol];
+            visibles = visibles.map(function (fila, i) { return { f: fila, v: valorOrden(col, fila), i: i }; })
+                .sort(function (a, b) {
+                    var vacioA = a.v === null || a.v === undefined || a.v === '';
+                    var vacioB = b.v === null || b.v === undefined || b.v === '';
+                    if (vacioA || vacioB) { return vacioA && vacioB ? a.i - b.i : (vacioA ? 1 : -1); }   /* vacíos al final */
+                    var r = (typeof a.v === 'number' && typeof b.v === 'number') ? a.v - b.v : COMPARAR.compare(String(a.v), String(b.v));
+                    return r !== 0 ? r * ordenDir : a.i - b.i;                                          /* estable */
+                })
+                .map(function (x) { return x.f; });
         }
 
         function pintar() {
@@ -179,6 +226,48 @@
             cargando: function () { cargado = false; pintar(); },
             filas: function () { return filas; }
         };
+    };
+
+    /* ---------- Ordenar una tabla simple (las que no usan Copeba.listado) ----------
+       Copeba.tablaOrdenable('#mi_tabla'): cada <th> con texto recibe la flechita y
+       ordena las filas que haya en ese momento. Valor de cada celda: su atributo
+       data-orden si lo tiene (fechas, números), o el texto que se ve. Las columnas
+       con data-orden="no" en el <th> no se ordenan. */
+    var COMPARAR_TABLA = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
+    Copeba.tablaOrdenable = function (selector) {
+        $(selector).each(function () {
+            var $tabla = $(this);
+            if ($tabla.data('cp-ordenable')) { return; }
+            $tabla.data('cp-ordenable', true);
+            var $ths = $tabla.find('thead th');
+            $ths.each(function (i) {
+                var $th = $(this), titulo = $.trim($th.text());
+                if (!titulo || $th.attr('data-orden') === 'no') { return; }
+                $th.attr('aria-sort', 'none').empty().append(
+                    $('<button type="button" class="cp-orden">').attr({ 'data-col': i, title: 'Ordenar por ' + titulo.toLowerCase() })
+                        .append($('<span>').text(titulo), $('<i>').html(FLECHAS)));
+            });
+            $tabla.on('click', 'thead .cp-orden', function () {
+                var $th = $(this).closest('th'), col = Number($(this).attr('data-col'));
+                var dir = $th.attr('aria-sort') === 'ascending' ? -1 : 1;
+                $ths.filter('[aria-sort]').attr('aria-sort', 'none');
+                $th.attr('aria-sort', dir === 1 ? 'ascending' : 'descending');
+                $tabla.find('tbody').each(function () {
+                    var $tb = $(this);
+                    var filas = $tb.children('tr').filter(function () { return !$(this).find('.cp-vacio').length; }).get();
+                    filas.map(function (tr, i) {
+                        var $td = $(tr).children().eq(col);
+                        var v = $td.attr('data-orden');
+                        return { tr: tr, i: i, v: v !== undefined ? v : $.trim($td.text()) };
+                    }).sort(function (a, b) {
+                        if (a.v === '' || b.v === '') { return a.v === b.v ? a.i - b.i : (a.v === '' ? 1 : -1); }
+                        var na = Number(a.v), nb = Number(b.v);
+                        var r = (!isNaN(na) && !isNaN(nb)) ? na - nb : COMPARAR_TABLA.compare(a.v, b.v);
+                        return r !== 0 ? r * dir : a.i - b.i;
+                    }).forEach(function (x) { $tb.append(x.tr); });
+                });
+            });
+        });
     };
 
     /* ---------- Ojo para ver/ocultar lo que se escribe en campos de contraseña ---------- */
