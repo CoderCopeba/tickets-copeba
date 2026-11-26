@@ -88,6 +88,37 @@
                 <?php } ?>
             </section>
 
+            <!-- Mi día: tareas que vencen, planificación de hoy y (Informática) tickets críticos.
+                 Aquí irán también actividades o eventos cuando existan esos módulos. -->
+            <div class="cp-seccion-titulo">
+                <div><h2>Mi día</h2><p>Lo que te toca hoy o ya está atrasado</p></div>
+            </div>
+            <div class="cp-mi-dia<?php echo es_soporte() ? " tres" : ""; ?>">
+                <section class="cp-tarjeta cp-panel">
+                    <div class="cp-seccion-titulo">
+                        <div><h2>Mis tareas</h2><p>Vencen hoy o ya vencieron</p></div>
+                        <a class="cp-enlace" href="../Tareas/">Ir a Tareas</a>
+                    </div>
+                    <ul class="cp-lista-atencion" id="dia_tareas"><li class="cp-vacio">Cargando…</li></ul>
+                </section>
+                <section class="cp-tarjeta cp-panel">
+                    <div class="cp-seccion-titulo">
+                        <div><h2>Planificación de hoy</h2><p>Actividades pendientes para hoy</p></div>
+                        <a class="cp-enlace" href="../Planificacion/">Ir a Planificación</a>
+                    </div>
+                    <ul class="cp-lista-atencion" id="dia_plan"><li class="cp-vacio">Cargando…</li></ul>
+                </section>
+                <?php if (es_soporte()) { ?>
+                <section class="cp-tarjeta cp-panel">
+                    <div class="cp-seccion-titulo">
+                        <div><h2>Tickets críticos</h2><p>Abiertos, tuyos o sin asignar</p></div>
+                        <a class="cp-enlace" href="../ConsultarTicket/">Ver tickets</a>
+                    </div>
+                    <ul class="cp-lista-atencion" id="dia_criticos"><li class="cp-vacio">Cargando…</li></ul>
+                </section>
+                <?php } ?>
+            </div>
+
             <?php if ($vista === "admin") { ?>
             <!-- Panel del sistema: qué requiere atención (la actividad está en Reportes) -->
             <div class="cp-rejilla dos cp-panel-admin">

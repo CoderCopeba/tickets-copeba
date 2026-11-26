@@ -90,6 +90,52 @@ class Inicio extends Conectar {
         return array("totales" => $totales, "asignados" => $asignados, "sin_asignar" => $sin_asignar);
     }
 
+    /* "Mi día" (todos los Inicios), en UNA consulta:
+       - tareas por hacer que vencen hoy o ya vencieron,
+       - actividades pendientes de su planificación para hoy (o atrasadas del periodo vigente),
+       - tickets Críticos abiertos asignados a la persona o sin asignar (solo quien atiende tickets).
+       La fecha "hoy" se calcula en hora de Guatemala (la base está en UTC). */
+    public function mi_dia($usu_id, $con_criticos){
+        $hoy = (new DateTime("now", new DateTimeZone("America/Guatemala")))->format("Y-m-d");
+        $sql = "
+            SELECT 'tarea' AS tipo, t.tarea_id AS id, t.tarea_titulo AS titulo,
+                   CAST(t.fech_limite AS CHAR) AS fecha, tu.tu_estado AS estado,
+                   a.area_nom AS detalle, t.prio_id AS prio_id
+            FROM td_tarea_usuario tu
+            INNER JOIN tm_tarea t ON t.tarea_id = tu.tarea_id AND t.est = 1
+            INNER JOIN tm_area a ON a.area_id = t.area_id
+            WHERE tu.usu_id = ? AND tu.tu_estado IN ('pendiente', 'proceso', 'devuelta')
+              AND t.fech_limite IS NOT NULL AND t.fech_limite <= ?
+            UNION ALL
+            SELECT 'plan', ac.act_id, ac.act_texto,
+                   CAST(ac.act_dia AS CHAR), ac.act_estado,
+                   CASE WHEN pl.plan_tipo = 'mes' THEN 'Plan mensual' ELSE 'Plan semanal' END, NULL
+            FROM td_plan_actividad ac
+            INNER JOIN tm_plan pl ON pl.plan_id = ac.plan_id
+            WHERE pl.usu_id = ? AND ac.est = 1 AND ac.act_estado = 'pendiente'
+              AND ac.act_dia IS NOT NULL AND ac.act_dia <= ? AND pl.fech_fin >= ?";
+        $params = array((int)$usu_id, $hoy, (int)$usu_id, $hoy, $hoy);
+        if ($con_criticos) {
+            $sql .= "
+            UNION ALL
+            SELECT 'critico', tk.tick_id, tk.tick_titulo,
+                   CAST(tk.fech_crea AS CHAR), tk.tick_estado,
+                   CASE WHEN tk.usu_asig IS NULL THEN 'Sin asignar' ELSE 'Asignado a ti' END, tk.prio_id
+            FROM tm_ticket tk
+            WHERE tk.est = 1 AND tk.tick_estado <> 'Cerrado' AND tk.prio_id = 4
+              AND (tk.usu_asig = ? OR tk.usu_asig IS NULL)";
+            $params[] = (int)$usu_id;
+        }
+        $sql .= " ORDER BY fecha LIMIT 60";
+
+        $dia = array("hoy" => $hoy, "tareas" => array(), "plan" => array(), "criticos" => $con_criticos ? array() : null);
+        foreach ($this->todos($sql, $params) as $f) {
+            $clave = $f["tipo"] === "tarea" ? "tareas" : ($f["tipo"] === "plan" ? "plan" : "criticos");
+            $dia[$clave][] = $f;
+        }
+        return $dia;
+    }
+
     /* Usuario: solo sus propios tickets */
     public function resumen_usuario($usu_id){
         $totales = $this->uno("

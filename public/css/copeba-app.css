@@ -920,3 +920,9 @@ th[aria-sort="ascending"] .cp-orden, th[aria-sort="descending"] .cp-orden { colo
 .cp-plan-tk-info small { color: var(--cp-texto-suave); font-size: 12px; }
 .cp-plan-tk-chips { display: flex; gap: 6px; align-items: center; }
 @media (max-width: 760px) { .cp-plan-tk { grid-template-columns: auto 1fr; } .cp-plan-tk-chips { grid-column: 2; } }
+/* ---------- Inicio: Mi día (tareas, planificación y tickets críticos) ---------- */
+.cp-mi-dia { display: grid; gap: 16px; margin-bottom: 24px; }
+@media (min-width: 900px) { .cp-mi-dia { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1200px) { .cp-mi-dia.tres { grid-template-columns: repeat(3, 1fr); } }
+.cp-mi-dia .cp-lista-atencion { max-height: 300px; overflow-y: auto; }
+.cp-estado.cp-dia-atrasado { background: var(--cp-rojo-suave); color: var(--cp-rojo); }
