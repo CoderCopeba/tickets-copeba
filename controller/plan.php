@@ -1,0 +1,212 @@
+<?php
+    /* Planificación semanal y mensual. Cada persona solo toca su propio plan;
+       la jefatura (Responsable/Suplente de sus grupos, o el Administrador) lo ve y revisa. */
+    require_once("../config/conexion.php");
+    require_once("../models/Plan.php");
+    requiere_sesion("ajax");
+    header("Content-Type: application/json; charset=utf-8");
+    $plan = new Plan();
+    $yo = usuario_actual_id();
+
+    function plan_ok($extra = array()){
+        echo json_encode(array_merge(array("status" => "ok"), $extra));
+        exit();
+    }
+    function plan_error($mensaje){
+        echo json_encode(array("status" => "error", "message" => $mensaje));
+        exit();
+    }
+    function plan_texto($campo, $max){
+        return trim(mb_substr((string)($_POST[$campo] ?? ""), 0, $max));
+    }
+    /* Periodo pedido (tipo + cualquier fecha dentro de él) */
+    function plan_periodo(){
+        $p = Plan::periodo((string)($_POST["tipo"] ?? ""), (string)($_POST["fecha"] ?? ""));
+        if ($p === null){ plan_error("El periodo no es válido."); }
+        return $p;
+    }
+    /* Día opcional: vacío o una fecha dentro del periodo */
+    function plan_dia(array $p){
+        $dia = (string)($_POST["dia"] ?? "");
+        if ($dia === ""){ return null; }
+        $d = DateTime::createFromFormat("!Y-m-d", $dia);
+        if (!$d || $d->format("Y-m-d") !== $dia || $dia < $p["inicio"] || $dia > $p["fin"]){
+            plan_error("El día debe estar dentro del periodo.");
+        }
+        return $dia;
+    }
+    /* Actividad propia y vigente; si no, 403/404 */
+    function plan_actividad_mia(Plan $plan, $act_id){
+        $a = $plan->actividad($act_id);
+        if ($a === null){ auth_denegar(404, "ajax", "La actividad no existe."); }
+        if ((int)$a["usu_id"] !== usuario_actual_id()){ auth_denegar(403, "ajax", "Solo puedes cambiar tu propio plan."); }
+        return $a;
+    }
+    function plan_dirige(Plan $plan){
+        return es_admin() || count((new Tarea())->grupos_asignables(usuario_actual_id(), false)) > 0;
+    }
+    /* Plan + actividades listo para la pantalla */
+    function plan_datos(Plan $plan, $fila, array $p){
+        if ($fila === null){ return null; }
+        $fila["tarde"] = Plan::tarde($fila["fech_entrega"], $p["plazo"]);
+        $fila["actividades"] = $plan->actividades($fila["plan_id"]);
+        return $fila;
+    }
+
+    switch ($_GET["op"] ?? "") {
+
+        /* Mi plan del periodo (null si aún no escribí nada) */
+        case "periodo":
+            $p = plan_periodo();
+            echo json_encode(array(
+                "periodo" => $p,
+                "hoy"     => date("Y-m-d"),
+                "plan"    => plan_datos($plan, $plan->plan_de($yo, $p), $p),
+                "dirige"  => plan_dirige($plan),
+                "soporte" => es_soporte(),
+            ));
+            break;
+
+        /* Quien atiende tickets: tickets abiertos suyos o sin técnico, para planificarlos */
+        case "tickets":
+            requiere_soporte();
+            echo json_encode($plan->tickets_disponibles($yo));
+            break;
+
+        /* Trae un ticket al plan (p. ej. "Viaje a Soloma" para el de las cámaras).
+           Si no tenía técnico, quien lo planifica lo toma y queda en la bitácora. */
+        case "agregar_ticket":
+            requiere_soporte();
+            $p = plan_periodo();
+            $tk = $plan->ticket_planificable((int)($_POST["tick_id"] ?? 0), $yo);
+            if ($tk === null){ plan_error("El ticket ya está cerrado o lo tiene otro técnico. Recarga la lista."); }
+            $dia = plan_dia($p);
+            $texto = plan_texto("texto", 300);
+            if ($texto === ""){ $texto = mb_substr($tk["tick_titulo"], 0, 300); }
+            $plan_id = $plan->asegurar_plan($yo, $p);
+            $actual = $plan->plan($plan_id);
+            if ($actual["plan_estado"] === "revisado"){ plan_error("El plan ya fue revisado: no se le pueden agregar actividades."); }
+            if ($tk["usu_asig"] === null){
+                require_once("../models/Ticket.php");
+                $ticket = new Ticket();
+                $ticket->update_ticket_asignacion($tk["tick_id"], $yo);
+                $nombre = trim(($_SESSION["usu_nom"] ?? "")." ".($_SESSION["usu_ape"] ?? ""));
+                $ticket->insert_evento($tk["tick_id"], $yo, $nombre." tomó el ticket y lo planificó".($dia ? " para el ".date("d/m/Y", strtotime($dia)) : ""));
+            }
+            $plan->agregar($plan_id, $texto, $dia, $actual["plan_estado"] !== "borrador", null, $tk["tick_id"]);
+            plan_ok(array("tomado" => $tk["usu_asig"] === null));
+            break;
+
+        case "agregar":
+            $p = plan_periodo();
+            $texto = plan_texto("texto", 300);
+            if ($texto === ""){ plan_error("Escribe la actividad."); }
+            $dia = plan_dia($p);
+            $plan_id = $plan->asegurar_plan($yo, $p);
+            $actual = $plan->plan($plan_id);
+            if ($actual["plan_estado"] === "revisado"){ plan_error("El plan ya fue revisado: no se le pueden agregar actividades."); }
+            /* Agregada después de entregar = imprevisto (queda marcada) */
+            $plan->agregar($plan_id, $texto, $dia, $actual["plan_estado"] !== "borrador");
+            plan_ok();
+            break;
+
+        case "editar":
+            $a = plan_actividad_mia($plan, (int)($_POST["act_id"] ?? 0));
+            if ($a["plan_estado"] !== "borrador"){ plan_error("El plan ya fue entregado: solo puedes marcar el avance."); }
+            $texto = plan_texto("texto", 300);
+            if ($texto === ""){ plan_error("Escribe la actividad."); }
+            $p = Plan::periodo($a["plan_tipo"], $a["fech_inicio"]);
+            $plan->editar($a["act_id"], $texto, plan_dia($p));
+            plan_ok();
+            break;
+
+        case "quitar":
+            $a = plan_actividad_mia($plan, (int)($_POST["act_id"] ?? 0));
+            if ($a["plan_estado"] !== "borrador"){ plan_error("El plan ya fue entregado: no se pueden quitar actividades."); }
+            $plan->quitar($a["act_id"]);
+            plan_ok();
+            break;
+
+        case "entregar":
+            $p = plan_periodo();
+            $fila = $plan->plan_de($yo, $p);
+            if ($fila === null || !count($plan->actividades($fila["plan_id"]))){ plan_error("Agrega al menos una actividad antes de entregar."); }
+            if (!$plan->entregar($fila["plan_id"])){ plan_error("El plan ya estaba entregado."); }
+            plan_ok(array("tarde" => date("Y-m-d") > $p["plazo"]));
+            break;
+
+        /* Hecho, no cumplido (con justificación) o volver a pendiente */
+        case "marcar":
+            $a = plan_actividad_mia($plan, (int)($_POST["act_id"] ?? 0));
+            if ($a["plan_estado"] === "borrador"){ plan_error("Primero entrega el plan."); }
+            if ($a["plan_estado"] === "revisado"){ plan_error("El plan ya fue revisado: no se puede cambiar."); }
+            if ($a["act_estado"] === "pospuesto"){ plan_error("Esta actividad ya se pospuso a otra fecha."); }
+            $estado = (string)($_POST["estado"] ?? "");
+            if (!in_array($estado, array("hecho", "no_cumplido", "pendiente"), true)){ plan_error("Estado no válido."); }
+            $just = plan_texto("justificacion", 1000);
+            if ($estado === "no_cumplido" && $just === ""){ plan_error("Explica por qué no se cumplió."); }
+            $plan->marcar($a["act_id"], $estado, $estado === "no_cumplido" ? $just : null);
+            plan_ok();
+            break;
+
+        /* Pospone con justificación: pasa sola al plan del periodo de la nueva fecha */
+        case "posponer":
+            $a = plan_actividad_mia($plan, (int)($_POST["act_id"] ?? 0));
+            if ($a["plan_estado"] === "borrador"){ plan_error("Primero entrega el plan."); }
+            if ($a["plan_estado"] === "revisado"){ plan_error("El plan ya fue revisado: no se puede cambiar."); }
+            if ($a["act_estado"] !== "pendiente"){ plan_error("Solo se pueden posponer actividades pendientes."); }
+            $just = plan_texto("justificacion", 1000);
+            if ($just === ""){ plan_error("Explica por qué se pospone."); }
+            $nueva = (string)($_POST["nueva_fecha"] ?? "");
+            $d = DateTime::createFromFormat("!Y-m-d", $nueva);
+            if (!$d || $d->format("Y-m-d") !== $nueva){ plan_error("Elige la nueva fecha."); }
+            if ($nueva < date("Y-m-d")){ plan_error("La nueva fecha no puede ser anterior a hoy."); }
+            if ($nueva === $a["act_dia"]){ plan_error("Elige una fecha distinta a la actual."); }
+            $destino = $plan->posponer($a, $just, $nueva);
+            plan_ok(array("destino" => $destino));
+            break;
+
+        /* Jefatura: estado de los planes de su gente en el periodo */
+        case "equipo":
+            if (!plan_dirige($plan)){ auth_denegar(403, "ajax", "Solo la jefatura de un área ve los planes del equipo."); }
+            $p = plan_periodo();
+            $personas = $plan->personas_a_cargo($yo, es_admin());
+            $resumen = $plan->resumen_equipo(array_column($personas, "usu_id"), $p);
+            foreach ($personas as &$x){
+                $r = $resumen[$x["usu_id"]] ?? null;
+                $x["plan_id"] = $r ? (int)$r["plan_id"] : null;
+                $x["estado"]  = $r ? $r["plan_estado"] : "sin_plan";
+                $x["tarde"]   = $r ? (Plan::tarde($r["fech_entrega"], $p["plazo"]) || ($r["plan_estado"] === "borrador" && date("Y-m-d") > $p["plazo"]))
+                                   : date("Y-m-d") > $p["plazo"];
+                foreach (array("total", "hechas", "no_cumplidas", "pospuestas") as $k){ $x[$k] = $r ? (int)$r[$k] : 0; }
+            }
+            unset($x);
+            echo json_encode(array("periodo" => $p, "hoy" => date("Y-m-d"), "personas" => $personas));
+            break;
+
+        /* Jefatura: ver el plan de una persona */
+        case "ver_plan":
+            $fila = $plan->plan((int)($_POST["plan_id"] ?? 0));
+            if ($fila === null){ auth_denegar(404, "ajax", "El plan no existe."); }
+            if ((int)$fila["usu_id"] !== $yo && !$plan->puede_supervisar($yo, es_admin(), $fila["usu_id"])){
+                auth_denegar(403, "ajax", "No diriges el área de esta persona.");
+            }
+            $p = Plan::periodo($fila["plan_tipo"], $fila["fech_inicio"]);
+            echo json_encode(array("periodo" => $p, "plan" => plan_datos($plan, $fila, $p),
+                                   "puede_revisar" => (int)$fila["usu_id"] !== $yo));
+            break;
+
+        case "revisar":
+            $fila = $plan->plan((int)($_POST["plan_id"] ?? 0));
+            if ($fila === null){ auth_denegar(404, "ajax", "El plan no existe."); }
+            if ((int)$fila["usu_id"] === $yo || !$plan->puede_supervisar($yo, es_admin(), $fila["usu_id"])){
+                auth_denegar(403, "ajax", "Solo la jefatura del área puede revisar este plan.");
+            }
+            if ($fila["plan_estado"] === "borrador"){ plan_error("La persona todavía no ha entregado su plan."); }
+            $plan->revisar($fila["plan_id"], $yo, plan_texto("comentario", 1000) ?: null);
+            plan_ok();
+            break;
+
+        default:
+            auth_denegar(404, "ajax", "Operación no válida.");
+    }

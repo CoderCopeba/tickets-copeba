@@ -68,7 +68,7 @@ try {
 
 echo "\n4. Tablas y datos\n";
 $tablas = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
-foreach (array("tm_usuario", "tm_ticket", "tm_area", "tm_sede", "tm_prioridad", "td_area_usuario", "td_usuario_evento", "tm_tarea", "td_tarea_usuario") as $t) {
+foreach (array("tm_usuario", "tm_ticket", "tm_area", "tm_sede", "tm_prioridad", "td_area_usuario", "td_usuario_evento", "tm_tarea", "td_tarea_usuario", "tm_plan", "td_plan_actividad") as $t) {
     in_array($t, $tablas, true) ? ok("Tabla ".$t) : falla("Falta la tabla ".$t." (la base no está actualizada: aplica las migraciones de instalar/migraciones)");
 }
 if (in_array("tm_ticket", $tablas, true)) {
