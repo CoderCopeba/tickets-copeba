@@ -184,6 +184,7 @@ function operacion_de_lectura(){
         "area.php"    => array("mis_areas", "catalogos", "miembros", "membresias"),
         "cuenta.php"  => array("volver"),
         "tarea.php"   => array("lista", "personas", "detalle"),
+        "plan.php"    => array("periodo", "equipo", "ver_plan", "tickets"),
     );
     $archivo = basename($_SERVER["SCRIPT_NAME"] ?? "");
     $op = (string)($_GET["op"] ?? "");

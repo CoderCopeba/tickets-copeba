@@ -866,3 +866,56 @@ th[aria-sort="ascending"] .cp-orden, th[aria-sort="descending"] .cp-orden { colo
 
 /* Nombre en listas (tickets, tareas): texto normal, se abre con el ojo */
 .cp-tarea-nombre { font-weight: 600; color: var(--cp-texto); }
+
+/* ===== Planificación (view/Planificacion) ===== */
+.cp-plan-periodo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.cp-plan-tipo { display: inline-flex; padding: 3px; border: 1px solid var(--cp-borde); border-radius: 10px; background: #fff; }
+.cp-plan-tipo button { padding: 7px 16px; border: 0; border-radius: 7px; background: transparent; font: inherit; font-size: 13px; font-weight: 600; color: var(--cp-texto-suave); cursor: pointer; }
+.cp-plan-tipo button.activa { background: var(--cp-verde-suave); color: var(--cp-verde-oscuro); }
+.cp-plan-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cp-plan-nav strong { min-width: 210px; text-align: center; font-family: var(--cp-titulos); font-size: 14.5px; }
+.cp-plan { padding: 18px 20px; margin-bottom: 22px; }
+.cp-plan-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+.cp-plan-cab h2 { margin: 0; font-family: var(--cp-titulos); font-size: 17px; }
+.cp-plan-cab p { margin: 3px 0 0; font-size: 13px; color: var(--cp-texto); }
+.cp-plan-cab p.cp-plan-atrasado { color: var(--cp-rojo); font-weight: 700; }
+.cp-plan-lista { list-style: none; margin: 10px 0; padding: 0; border: 1px solid var(--cp-borde); border-radius: 10px; }
+.cp-plan-lista > li + li { border-top: 1px solid var(--cp-borde); }
+.cp-plan-act { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 10px 12px; }
+.cp-plan-act-info { display: grid; grid-template-columns: 64px 1fr; column-gap: 10px; align-items: baseline; min-width: 0; }
+.cp-plan-dia { font-family: var(--cp-mono); font-size: 12px; color: var(--cp-texto-suave); }
+.cp-plan-texto { font-size: 13.5px; overflow-wrap: anywhere; }
+.cp-plan-notas { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.cp-plan-notas:empty { display: none; }
+.cp-plan-just { font-size: 12.5px; color: var(--cp-texto-suave); font-style: italic; }
+.cp-plan-act .cp-tarea-acciones { margin-top: 0; flex-shrink: 0; }
+.cp-plan-nueva { display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: start; }
+.cp-plan-nueva > [hidden] { display: none; }
+.cp-plan-nueva[hidden] { display: none; }
+.cp-plan-editar { width: 100%; grid-template-columns: 1fr auto auto auto; }
+.cp-plan-pie { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 12px; }
+.cp-plan-pie:empty { display: none; }
+.cp-plan-chips { justify-content: flex-start; margin-top: 0; }
+@media (max-width: 760px) {
+    .cp-plan-act { flex-direction: column; }
+    .cp-plan-nueva, .cp-plan-editar { grid-template-columns: 1fr; }
+    .cp-plan-nav strong { min-width: 0; }
+}
+/* Planificación: textos legibles, botón Entregar junto al estado y tickets */
+.cp-plan .cp-control, .cp-dialogo .cp-control { color: var(--cp-texto); }
+.cp-plan-lista > .cp-vacio { color: #4b5563; }
+.cp-plan-cab-der { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.cp-plan-resumen { font-size: 13px; font-weight: 600; color: var(--cp-texto); }
+.cp-plan-ticket { text-decoration: none; color: var(--cp-azul-medio); border: 1px solid #c9d7ec; background: #eef3fb; }
+.cp-plan-ticket:hover { text-decoration: underline; color: var(--cp-azul); }
+.cp-plan-tickets { display: grid; gap: 6px; max-height: 280px; overflow-y: auto; margin: 10px 0 14px; padding: 6px;
+    border: 1px solid var(--cp-borde); border-radius: 8px; }
+.cp-plan-tickets > p { margin: 6px; }
+.cp-plan-tk { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; margin: 0; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
+.cp-plan-tk:hover { background: var(--cp-verde-suave); }
+.cp-plan-tk input { width: 16px; height: 16px; accent-color: var(--cp-verde-oscuro); }
+.cp-plan-tk-info { display: flex; flex-direction: column; min-width: 0; font-size: 13px; }
+.cp-plan-tk-info strong { font-weight: 600; overflow-wrap: anywhere; }
+.cp-plan-tk-info small { color: var(--cp-texto-suave); font-size: 12px; }
+.cp-plan-tk-chips { display: flex; gap: 6px; align-items: center; }
+@media (max-width: 760px) { .cp-plan-tk { grid-template-columns: auto 1fr; } .cp-plan-tk-chips { grid-column: 2; } }
