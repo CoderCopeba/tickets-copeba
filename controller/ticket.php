@@ -284,7 +284,17 @@
         case "tomar":
             requiere_soporte();
             $tick_id = requiere_acceso_ticket($ticket, $_POST["tick_id"] ?? 0);
-            $ticket->update_ticket_asignacion($tick_id, usuario_actual_id());
+            if (!empty($_POST["solo_libre"])){
+                /* Desde "Sin asignar": solo si nadie lo tomó antes (evita choques entre agentes) */
+                if (!$ticket->tomar_si_libre($tick_id, usuario_actual_id())){
+                    $t = $ticket->detalle($tick_id);
+                    if ($t !== null && (int)$t["usu_asig"] === usuario_actual_id()){ ticket_ok(); exit(); }
+                    $quien = $t !== null ? trim(($t["asig_nom"] ?? "")." ".($t["asig_ape"] ?? "")) : "";
+                    ticket_error($quien !== "" ? "Este ticket ya lo tomó ".$quien."." : "Este ticket ya no está disponible.");
+                }
+            } else {
+                $ticket->update_ticket_asignacion($tick_id, usuario_actual_id());
+            }
             $ticket->insert_evento($tick_id, usuario_actual_id(), nombre_sesion()." tomó el ticket");
             ticket_ok();
         break;

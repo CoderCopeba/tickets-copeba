@@ -40,9 +40,29 @@
                 $('<td>').append(Copeba.estado(t.tick_estado)),
                 $('<td>').append(soporte(t)),
                 $('<td class="cp-mono">').attr('data-orden', t.fech_crea || '').text(Copeba.fecha(t.fech_crea)),
-                $('<td>').append(botonVer(t.tick_id))
+                $('<td class="cp-acciones-fila">').append(
+                    nombre === 'sin_asignar' ? botonResolver(t) : null,
+                    botonVer(t.tick_id)
+                )
             ));
         });
+    }
+
+    /* "Resolver" (solo Informática ve esta tabla): toma el ticket si sigue libre.
+       Si otra persona lo tomó primero, el servidor lo rechaza, avisamos y refrescamos. */
+    function botonResolver(t) {
+        return $('<button type="button" class="cp-btn cp-btn-primario cp-btn-resolver">')
+            .text('Resolver')
+            .attr('title', 'Tomar el ticket ' + Copeba.folio(t.tick_id))
+            .on('click', function () {
+                var $b = $(this).prop('disabled', true);
+                Copeba.enviar('../../controller/ticket.php?op=tomar',
+                              { tick_id: t.tick_id, solo_libre: 1 }, 'No se pudo tomar el ticket.')
+                    .done(function () {
+                        window.location.href = '../DetalleTicket/?ID=' + encodeURIComponent(t.tick_id);
+                    })
+                    .fail(function () { cargar(); });
+            });
     }
 
     function pintarKpis(totales) {
@@ -133,9 +153,28 @@
 
     $(function () {
         bienvenida();
+        cargar();
+        /* Si hay tabla "Sin asignar", se refresca sola para ver lo que toman los demás */
+        if ($('[data-tabla="sin_asignar"]').length) {
+            setInterval(function () { if (!document.hidden) { cargar(true); } }, 20000);
+            $(document).on('visibilitychange', function () { if (!document.hidden) { cargar(true); } });
+        }
+    });
+
+    var cargando = false;
+    function cargar(silencioso) {
+        if (cargando) { return; }
+        cargando = true;
         $.post('../../controller/inicio.php?op=resumen')
+            .always(function () { cargando = false; })
             .done(function (datos) {
                 if (typeof datos === 'string') { datos = JSON.parse(datos); }
+                if (silencioso) {
+                    pintarKpis(datos.totales);
+                    pintarTabla('asignados', datos.asignados, 'No tienes tickets abiertos asignados.');
+                    pintarTabla('sin_asignar', datos.sin_asignar, 'No hay tickets pendientes de asignar.');
+                    return;
+                }
                 $('#lbl_actualizado').text('Actualizado hoy, ' + hoy());
                 pintarKpis(datos.totales);
                 if (datos.categorias) { pintarCategorias(datos.categorias); }
@@ -145,8 +184,9 @@
                 if (datos.vista === 'admin') { pintarPanelAdmin(datos); }
             })
             .fail(function () {
+                if (silencioso) { return; }
                 $('[data-tabla] ').html('<tr><td colspan="7" class="cp-vacio">No se pudo cargar la información. Recarga la página.</td></tr>');
                 $('#kpis').removeClass('cp-cargando');
             });
-    });
+    }
 })();
