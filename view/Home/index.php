@@ -47,7 +47,14 @@
 
             <div class="cp-seccion-titulo">
                 <h2><?php echo $vista === "admin" ? "Panel del sistema" : ($vista === "soporte" ? "Mi trabajo" : "Mis tickets"); ?></h2>
-                <span class="cp-fecha" id="lbl_actualizado"></span>
+                <div class="cp-actualizar">
+                    <span class="cp-fecha" id="lbl_actualizado"></span>
+                    <!-- Para quien no sabe usar F5: trae los datos más recientes -->
+                    <button type="button" class="cp-btn cp-btn-actualizar" id="btn_actualizar" title="Traer los datos más recientes">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg>
+                        <span>Actualizar</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Indicadores: el texto y los valores dependen del rol -->
@@ -203,6 +210,19 @@
 
         </div>
     </div>
+
+    <!-- Detalle de una tarea sin salir del Inicio (solo consulta; para entregar: "Ir a Tareas") -->
+    <dialog class="cp-dialogo cp-dialogo-ancho" id="dlg_tarea" aria-labelledby="dt_titulo">
+        <header><h2 id="dt_titulo"></h2><p id="dt_meta"></p></header>
+        <div class="cp-dialogo-cuerpo">
+            <div class="cp-tarea-instrucciones" id="dt_instrucciones"></div>
+            <div id="dt_avance"></div>
+        </div>
+        <footer>
+            <a class="cp-btn cp-btn-borde" id="dt_ir" href="../Tareas/">Ir a Tareas para entregarla</a>
+            <button type="button" class="cp-btn cp-btn-primario" data-cerrar>Cerrar</button>
+        </footer>
+    </dialog>
 
     <?php require_once("../MainJs/js.php");?>
     <script src="home.js?v=<?php echo filemtime(__DIR__."/home.js"); ?>"></script>

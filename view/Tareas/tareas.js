@@ -85,6 +85,9 @@ $(function () {
     Copeba.editor('#descrip', 160, { barra: 'simple', ayuda: 'Explica qué hay que hacer y cómo entregarlo…' });
 
     cargar();
+    /* Desde el Inicio ("Mi día"): ?ID=123 abre el detalle de esa tarea */
+    var abrir = Number(Copeba.param('ID'));
+    if (abrir > 0) { abrirDetalle(abrir); }
 });
 
 function crearListaAsignadas() {
