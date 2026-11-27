@@ -224,8 +224,8 @@ body {
     font: inherit;
     font-size: 13px;
     color: var(--azul);
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    text-decoration: none;
+    font-weight: 600;
     cursor: pointer;
 }
 .cp-link:hover { color: var(--verde-oscuro); }

@@ -65,7 +65,7 @@
                         array("mis_abiertos", "Asignados a mí", "Abiertos", "abierto", "azul"),
                         array("sin_asignar", "Sin asignar", "Esperan agente", "cola", "ambar"),
                         array("mis_cerrados", "Cerrados por mí", "Histórico", "cerrado", "gris"),
-                        array("abiertos", "Abiertos en total", "Toda la mesa", "ticket", ""),
+                        array("abiertos", "Abiertos en total", "Todos los tickets", "ticket", ""),
                     );
                 } else {
                     $kpis = array(

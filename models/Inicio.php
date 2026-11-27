@@ -19,9 +19,11 @@ class Inicio extends Conectar {
     private const CAMPOS_TICKET = "
         t.tick_id, t.tick_titulo, t.tick_estado, t.fech_crea,
         c.cat_nom,
+        (t.tick_estado <> 'Cerrado' AND now() > t.fech_crea + INTERVAL p.prio_sla_horas HOUR) AS vencido,
         TRIM(CONCAT(COALESCE(a.usu_nom,''),' ',COALESCE(a.usu_ape,''))) AS asignado
         FROM tm_ticket t
         INNER JOIN tm_categoria c ON c.cat_id = t.cat_id
+        INNER JOIN tm_prioridad p ON p.prio_id = t.prio_id
         LEFT JOIN tm_usuario a ON a.usu_id = t.usu_asig";
 
     /* Administrador del sistema: panel de administración (qué requiere atención).
@@ -44,12 +46,12 @@ class Inicio extends Conectar {
             SELECT u.usu_id, TRIM(CONCAT(u.usu_nom, ' ', u.usu_ape)) AS nombre, u.usu_usuario AS usuario
             FROM tm_usuario u WHERE u.est = 1 AND NOT EXISTS
               (SELECT 1 FROM td_area_usuario au WHERE au.usu_id = u.usu_id AND au.est = 1)
-            ORDER BY u.usu_nom LIMIT 6");
+            ORDER BY u.usu_nom LIMIT 50");
 
         $vencidas = $this->todos("
             SELECT TRIM(CONCAT(usu_nom, ' ', usu_ape)) AS nombre, usu_usuario AS usuario, usu_pass_expira AS fecha
             FROM tm_usuario WHERE est = 1 AND usu_pass_temporal = 1 AND usu_pass_expira < now()
-            ORDER BY usu_pass_expira DESC LIMIT 6");
+            ORDER BY usu_pass_expira DESC LIMIT 50");
 
         $fuera_tiempo = $this->todos("
             SELECT t.tick_id, t.tick_titulo, t.fech_crea, p.prio_nom, p.prio_id,
@@ -58,7 +60,7 @@ class Inicio extends Conectar {
             FROM tm_ticket t INNER JOIN tm_prioridad p ON p.prio_id = t.prio_id
             LEFT JOIN tm_usuario a ON a.usu_id = t.usu_asig
             WHERE t.est = 1 AND t.tick_estado <> 'Cerrado' AND now() > t.fech_crea + INTERVAL p.prio_sla_horas HOUR
-            ORDER BY p.prio_id DESC, horas_vencido DESC LIMIT 6");
+            ORDER BY p.prio_id DESC, horas_vencido DESC LIMIT 50");
 
         $areas_vacias = $this->todos("
             SELECT a.area_nom AS nombre FROM tm_area a
