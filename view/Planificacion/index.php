@@ -15,48 +15,39 @@
         <div class="container-fluid">
             <header class="cp-encabezado">
                 <div>
-                    <small>Mesa de Ayuda · Copeba, R.L.</small>
+                    <small>Sistema Interno · Cooperativa Copeba, R.L.</small>
                     <h1>Planificación</h1>
                 </div>
                 <p class="cp-encabezado-nota">Lo que planeas hacer en la semana o el mes, y cómo te fue</p>
             </header>
 
-            <!-- Periodo: semanal / mensual y navegación -->
-            <div class="cp-plan-periodo">
+            <!-- Filtro: tipo de plan y rango Desde–Hasta (con atajos). Se ven todos los planes del rango. -->
+            <form class="cp-tarjeta cp-plan-filtro" id="filtro_form" novalidate>
                 <div class="cp-plan-tipo" role="tablist" aria-label="Tipo de plan">
                     <button type="button" role="tab" data-tipo="semana" class="activa" aria-selected="true">Semanal</button>
                     <button type="button" role="tab" data-tipo="mes" aria-selected="false">Mensual</button>
                 </div>
-                <div class="cp-plan-nav">
-                    <button type="button" class="cp-cal-flecha" id="btn_anterior" aria-label="Periodo anterior">‹</button>
-                    <strong id="lbl_periodo">…</strong>
-                    <button type="button" class="cp-cal-flecha" id="btn_siguiente" aria-label="Periodo siguiente">›</button>
-                    <button type="button" class="cp-btn cp-btn-borde cp-btn-chico" id="btn_actual">Actual</button>
-                    <button type="button" class="cp-btn cp-btn-borde cp-btn-chico" id="btn_proximo">Próximo</button>
+                <div class="cp-plan-rango">
+                    <label for="f_desde">Desde</label>
+                    <input type="date" id="f_desde" data-rango-con="#f_hasta">
+                    <label for="f_hasta">Hasta</label>
+                    <input type="date" id="f_hasta" data-rango-con="#f_desde">
+                    <button type="submit" class="cp-btn cp-btn-primario cp-btn-chico" id="btn_filtrar">Ver</button>
                 </div>
-            </div>
+                <div class="cp-plan-atajos" id="atajos" aria-label="Atajos de fechas"></div>
+            </form>
 
-            <section class="cp-tarjeta cp-plan" id="mi_plan">
-                <div class="cp-plan-cab">
-                    <div>
-                        <h2>Mi plan</h2>
-                        <p id="lbl_plazo"></p>
-                    </div>
-                    <div class="cp-plan-cab-der"><span id="lbl_estado"></span><span id="lugar_entregar"></span></div>
-                </div>
-                <div id="comentario_jefe"></div>
-                <ul class="cp-plan-lista" id="actividades"></ul>
-                <form class="cp-plan-nueva" id="nueva_form" novalidate>
-                    <input type="text" class="cp-control" id="nueva_texto" maxlength="300" autocomplete="off" placeholder="Nueva actividad, p. ej. Cambio de batería laptop de Caja Soloma" aria-label="Nueva actividad">
-                    <input type="date" id="nueva_dia" aria-label="Día (opcional)">
-                    <button type="submit" class="cp-btn cp-btn-borde">Agregar</button>
-                    <button type="button" class="cp-btn cp-btn-borde" id="btn_desde_ticket" hidden>Desde un ticket</button>
-                </form>
-                <div class="cp-plan-pie" id="pie_plan"></div>
-            </section>
+            <!-- Un bloque por semana (o mes) del rango; se llena desde planificacion.js -->
+            <div id="planes" aria-live="polite"></div>
 
             <!-- Solo si la persona dirige algún área (el servidor lo decide) -->
             <div id="lista_equipo" hidden></div>
+
+            <?php if (es_soporte()) { ?>
+            <!-- Solo TI: notas internas de los tickets (ej. "se acabó la pasta térmica")
+                 para tomarlas en cuenta al planificar. El servidor vuelve a comprobar el permiso. -->
+            <div id="lista_notas"></div>
+            <?php } ?>
         </div>
     </div>
 
@@ -104,6 +95,32 @@
             <footer>
                 <button type="button" class="cp-btn cp-btn-borde" data-cerrar>Cancelar</button>
                 <button type="submit" class="cp-btn cp-btn-primario">Agregar al plan</button>
+            </footer>
+        </form>
+    </dialog>
+
+    <!-- Planificar a partir de una nota interna de TI (ej. "se acabaron los teclados" ->
+         "Nota interna 004 · Salida por suministros"). Solo TI; el servidor lo comprueba. -->
+    <dialog class="cp-dialogo cp-dialogo-ancho" id="dlg_nota" aria-labelledby="nt_titulo">
+        <form id="nota_form" method="dialog" novalidate>
+            <header><h2 id="nt_titulo">Planificar desde una nota</h2><p>Notas internas de TI en tickets abiertos (últimos 60 días). La actividad queda con la referencia a la nota.</p></header>
+            <div class="cp-dialogo-cuerpo">
+                <input type="search" class="cp-control" id="nt_buscar" placeholder="Buscar en las notas, el ticket o quién la escribió…" aria-label="Buscar nota" autocomplete="off">
+                <div class="cp-plan-tickets" id="nt_lista" role="radiogroup" aria-label="Notas internas"></div>
+                <div class="cp-campos-2">
+                    <div class="cp-campo">
+                        <label for="nt_texto">Actividad</label>
+                        <input type="text" class="cp-control" id="nt_texto" maxlength="250" autocomplete="off" placeholder="P. ej. Salida por suministros">
+                    </div>
+                    <div class="cp-campo">
+                        <label for="nt_dia">Día (opcional)</label>
+                        <input type="date" id="nt_dia">
+                    </div>
+                </div>
+            </div>
+            <footer>
+                <button type="button" class="cp-btn cp-btn-borde" data-cerrar>Cancelar</button>
+                <button type="submit" class="cp-btn cp-btn-primario" id="nt_enviar">Agregar al plan</button>
             </footer>
         </form>
     </dialog>
