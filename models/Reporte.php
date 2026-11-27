@@ -1,5 +1,5 @@
 <?php
-/* Reportes de actividad de la mesa de ayuda para un período [desde, hasta].
+/* Reportes de actividad de soporte (tickets) para un período [desde, hasta].
    "Recibidos" = creados en el período; "Resueltos" = cerrados en el período. */
 class Reporte extends Conectar {
 

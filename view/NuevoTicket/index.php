@@ -20,7 +20,7 @@
 
             <header class="cp-encabezado">
                 <div>
-                    <small>Mesa de Ayuda · Copeba, R.L.</small>
+                    <small>Sistema Interno · Cooperativa Copeba, R.L.</small>
                     <h1>Nuevo ticket</h1>
                 </div>
                 <p class="cp-encabezado-nota">Desde esta ventana podrá generar nuevas solicitudes de soporte</p>

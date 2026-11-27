@@ -19,7 +19,7 @@
 
             <header class="cp-encabezado">
                 <div>
-                    <small>Gerencia · Mesa de Ayuda · Copeba, R.L.</small>
+                    <small>Gerencia · Sistema Interno · Cooperativa Copeba, R.L.</small>
                     <h1>Reportes de actividad</h1>
                 </div>
                 <div class="cp-encabezado-acciones cp-no-imprimir">
