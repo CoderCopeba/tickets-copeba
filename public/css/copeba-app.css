@@ -932,6 +932,9 @@ th[aria-sort="ascending"] .cp-orden, th[aria-sort="descending"] .cp-orden { colo
 @media (min-width: 1200px) { .cp-mi-dia.tres { grid-template-columns: repeat(3, 1fr); } }
 .cp-paginas { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0ece3; font-size: 12px; color: var(--cp-texto-suave); }
 .cp-paginas[hidden] { display: none; }
+/* En la paginación, desactivado = no hay más páginas (no "cargando"): cursor normal y sin resaltar */
+.cp-paginas .cp-btn[disabled] { cursor: default; opacity: .45; }
+.cp-paginas .cp-btn[disabled]:hover { border-color: var(--cp-borde); color: inherit; }
 .cp-paginado > [hidden] { display: none !important; }
 .cp-plan-tickets + .cp-paginas { margin-bottom: 14px; }
 .cp-plan-nota-texto { display: block; white-space: pre-line; max-width: 520px; }
@@ -952,3 +955,9 @@ th[aria-sort="ascending"] .cp-orden, th[aria-sort="descending"] .cp-orden { colo
 /* Regla del sistema: ningún enlace subrayado. Lo que lleva a otra página va como
    botón o flecha (.cp-btn, .cp-ver), nunca como nombre subrayado. */
 a, a:hover, a:focus, .cp-link, .cp-link:hover { text-decoration: none !important; }
+/* Inicio: botón Actualizar junto a la hora de la última carga */
+.cp-actualizar { display: flex; align-items: center; gap: 12px; }
+.cp-btn-actualizar { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; font-size: 13px; background: var(--cp-amarillo); color: var(--cp-azul); border: 1px solid #e6d900; }
+.cp-btn-actualizar:hover { background: #fff; color: var(--cp-azul); border-color: var(--cp-azul); }
+.cp-btn-actualizar:disabled { opacity: .7; cursor: wait; }
+.cp-ver[data-tarea] { cursor: pointer; }

@@ -130,12 +130,15 @@
         Copeba.paginar(sel, 5);
     }
 
-    /* Fila de lista con flecha para ir al detalle (sin enlaces subrayados) */
+    /* Fila de lista con botón a la derecha (sin enlaces subrayados):
+       ojo = detalle de ESE elemento (ticket o tarea); flecha = ir a la pantalla */
+    var OJO = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
     var FLECHA = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
-    function filaIr(titulo, href, $meta) {
+    function filaIr(titulo, href, $meta, detalle) {
         return $('<li class="cp-lista-ir">').append(
             $('<div>').append($('<strong>').text(titulo), $meta),
-            $('<a class="cp-ver">').attr({ href: href, title: 'Abrir', 'aria-label': 'Abrir ' + titulo }).html(FLECHA)
+            $('<a class="cp-ver">').attr({ href: href, title: detalle ? 'Ver detalle' : 'Abrir', 'aria-label': (detalle ? 'Ver ' : 'Abrir ') + titulo })
+                .html(detalle ? OJO : FLECHA)
         );
     }
 
@@ -151,7 +154,7 @@
                 $('<span class="cp-lista-meta">').append(
                     $('<span class="cp-prioridad">').addClass('p' + t.prio_id).text(t.prio_nom),
                     $('<span>').text('vencido hace ' + horas(t.horas_vencido) + ' · ' + (t.asignado || 'sin asignar'))
-                ));
+                ), true);
         });
         listaPaginada('#lista_sin_area', d.sin_area, 'Todas las cuentas tienen área.', function (u) {
             return $('<li>').append($('<strong>').text(u.nombre), $('<span class="cp-lista-meta cp-mono">').text(u.usuario));
@@ -162,6 +165,36 @@
         listaPaginada('#lista_cuentas_areas', cuentasAreas, 'Sin temporales vencidas ni áreas vacías.', function (x) {
             return $('<li>').append($('<strong>').text(x.t), $('<span class="cp-lista-meta">').text(x.m));
         });
+    }
+
+    /* ---------- Detalle de una tarea en ventana (sin salir del Inicio) ---------- */
+    var AVANCE = {
+        pendiente: ['Pendiente', 'pendiente'], proceso: ['En proceso', 'proceso'], entregada: ['Entregada', 'abierto'],
+        revisada: ['Revisada', 'revisada'], devuelta: ['Devuelta', 'cerrado']
+    };
+    function verTarea(id) {
+        $.post('../../controller/tarea.php?op=detalle', { tarea_id: id }).done(function (r) {
+            var d = Copeba.leer(r);
+            if (!d || !d.tarea) { Copeba.aviso((d && d.message) || 'No se pudo abrir la tarea.'); return; }
+            var t = d.tarea, mio = d.mio;
+            $('#dt_titulo').text(t.tarea_titulo);
+            $('#dt_meta').text([
+                t.area_nom + (t.sede_nom ? ' · ' + t.sede_nom : ''),
+                'Asignada por ' + t.asignada_por + ' el ' + Copeba.fecha(t.fech_crea),
+                'Urgencia: ' + t.prio_nom,
+                t.fech_limite ? 'Fecha límite: ' + Copeba.fecha(t.fech_limite) : 'Sin fecha límite'
+            ].join('  ·  '));
+            $('#dt_instrucciones').html(t.tarea_descrip);   /* ya filtrado por html_limpio() en el servidor */
+            var $a = $('#dt_avance').empty();
+            if (mio) {
+                var e = AVANCE[mio.tu_estado] || AVANCE.pendiente;
+                $a.append($('<p>').append($('<strong>').text('Mi avance: '), $('<span class="cp-estado">').addClass(e[1]).text(e[0])));
+                if (mio.tu_estado === 'devuelta' && mio.tu_observacion) { $a.append($('<p class="cp-tarea-nota devuelta">').text('Por corregir: ' + mio.tu_observacion)); }
+                if (mio.tu_entrega && mio.tu_estado !== 'devuelta') { $a.append($('<p class="cp-tarea-nota">').text('Tu entrega (' + Copeba.fecha(mio.fech_entrega) + '): ' + mio.tu_entrega)); }
+            }
+            $('#dt_ir').attr('href', '../Tareas/?ID=' + encodeURIComponent(t.tarea_id));
+            Copeba.dialogo('dlg_tarea');
+        }).fail(function (x) { Copeba.aviso((Copeba.leer(x.responseText) || {}).message || 'No se pudo abrir la tarea.'); });
     }
 
     /* ---------- Mi día (todos los Inicios) ---------- */
@@ -177,11 +210,14 @@
     function pintarMiDia(d) {
         if (!d) { return; }
         listaPaginada('#dia_tareas', d.tareas, 'No tienes tareas que venzan hoy.', function (t) {
-            return filaIr(t.titulo, '../Tareas/',
+            var $fila = filaIr(t.titulo, '#',
                 $('<span class="cp-lista-meta">').append(
                     chipDia(t.fecha, d.hoy),
                     $('<span>').text((ESTADO_TAREA[t.estado] || t.estado) + ' · ' + t.detalle)
-                ));
+                ), true);
+            /* El ojo abre el detalle aquí mismo, sin salir del Inicio */
+            $fila.find('.cp-ver').attr('data-tarea', t.id).removeAttr('href').attr('role', 'button').attr('tabindex', '0');
+            return $fila;
         });
         listaPaginada('#dia_plan', d.plan, 'Nada pendiente en tu planificación para hoy.', function (a) {
             return filaIr(a.titulo, '../Planificacion/',
@@ -194,7 +230,7 @@
                     $('<span class="cp-lista-meta">').append(
                         $('<span class="cp-prioridad p4">').text('Crítica'),
                         $('<span>').text(t.detalle + ' · ' + Copeba.fecha(t.fecha))
-                    ));
+                    ), true);
             });
         }
     }
@@ -202,6 +238,17 @@
     $(function () {
         bienvenida();
         cargar();
+        $('#dia_tareas').on('click keydown', '[data-tarea]', function (e) {
+            if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') { return; }
+            e.preventDefault();
+            verTarea(Number($(this).attr('data-tarea')));
+        });
+        $('#dlg_tarea').on('click', '[data-cerrar]', function () { Copeba.dialogo('dlg_tarea', false); });
+        /* "Actualizar": recarga la página completa (igual que F5), para quien no conoce el atajo */
+        $('#btn_actualizar').on('click', function () {
+            $(this).prop('disabled', true).find('span').text('Actualizando…');
+            window.location.reload();
+        });
         /* Si hay tabla "Sin asignar", se refresca sola para ver lo que toman los demás */
         if ($('[data-tabla="sin_asignar"]').length) {
             setInterval(function () { if (!document.hidden) { cargar(true); } }, 20000);
@@ -224,7 +271,8 @@
                     pintarTabla('sin_asignar', datos.sin_asignar, 'No hay tickets pendientes de asignar.');
                     return;
                 }
-                $('#lbl_actualizado').text('Actualizado hoy, ' + hoy());
+                var ahora = new Date();
+                $('#lbl_actualizado').text('Actualizado hoy, ' + hoy() + ' a las ' + ('0' + ahora.getHours()).slice(-2) + ':' + ('0' + ahora.getMinutes()).slice(-2));
                 pintarKpis(datos.totales);
                 if (datos.categorias) { pintarCategorias(datos.categorias); }
                 pintarTabla('recientes', datos.recientes, 'Todavía no hay tickets.');
