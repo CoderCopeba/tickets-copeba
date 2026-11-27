@@ -15,7 +15,7 @@
         <div class="container-fluid">
             <header class="cp-encabezado">
                 <div>
-                    <small>Mesa de Ayuda · Copeba, R.L.</small>
+                    <small>Sistema Interno · Cooperativa Copeba, R.L.</small>
                     <h1>Tareas</h1>
                 </div>
                 <p class="cp-encabezado-nota">Trabajo que asigna la jefatura de cada área</p>
@@ -30,12 +30,17 @@
     <!-- Nueva tarea (el servidor vuelve a comprobar que diriges el área y a sus personas) -->
     <dialog class="cp-dialogo cp-dialogo-ancho" id="dlg_nueva" aria-labelledby="dlg_nueva_titulo">
         <form id="nueva_form" method="dialog" novalidate>
-            <header><h2 id="dlg_nueva_titulo">Nueva tarea</h2><p>Se asigna de una vez a todas las personas que marques; cada una hace su propia entrega.</p></header>
+            <header><h2 id="dlg_nueva_titulo">Nueva tarea</h2><p id="dlg_nueva_nota">Se asigna de una vez a todas las personas que marques; cada una hace su propia entrega.</p></header>
             <div class="cp-dialogo-cuerpo">
                 <div class="cp-campos-2">
-                    <div class="cp-campo">
+                    <div class="cp-campo" id="campo_grupo">
                         <label for="grupo">Área</label>
                         <select class="cp-control" id="grupo" required></select>
+                    </div>
+                    <!-- Al editar, el área no cambia -->
+                    <div class="cp-campo" id="campo_grupo_fijo" hidden>
+                        <span class="cp-etiqueta">Área</span>
+                        <p class="cp-control" id="grupo_fijo" style="margin:0"></p>
                     </div>
                     <div class="cp-campo">
                         <label for="prio_id">Urgencia</label>
@@ -61,7 +66,7 @@
             </div>
             <footer>
                 <button type="button" class="cp-btn cp-btn-borde" data-cerrar>Cancelar</button>
-                <button type="submit" class="cp-btn cp-btn-primario">Asignar tarea</button>
+                <button type="submit" class="cp-btn cp-btn-primario" id="nueva_enviar">Asignar tarea</button>
             </footer>
         </form>
     </dialog>

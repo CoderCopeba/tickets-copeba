@@ -11,9 +11,9 @@ var ICONO = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke=
 /* Avance de cada persona: texto y color (reutiliza las etiquetas .cp-estado) */
 var AVANCE = {
     pendiente: { texto: 'Pendiente',   clase: 'pendiente' },
-    proceso:   { texto: 'En proceso',  clase: 'pendiente' },
+    proceso:   { texto: 'En proceso',  clase: 'proceso' },
     entregada: { texto: 'Entregada',   clase: 'abierto' },
-    revisada:  { texto: 'Revisada',    clase: 'abierto' },
+    revisada:  { texto: 'Revisada',    clase: 'revisada' },
     devuelta:  { texto: 'Devuelta',    clase: 'cerrado' }
 };
 var OJO = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -77,7 +77,7 @@ $(function () {
     $('dialog').on('click', '[data-cerrar]', function () { this.closest('dialog').close(); });
     $('#grupo').on('change', cargarPersonas);
     $('#nueva_form').on('submit', crear);
-    $('#personas').on('change', '#todas', function () { $('#personas input[name="personas[]"]').prop('checked', this.checked); });
+    $('#personas').on('change', '#todas', function () { $('#personas input[name="personas[]"]:not(:disabled)').prop('checked', this.checked); });
     $('#personas').on('change', 'input[name="personas[]"]', function () {
         var $c = $('#personas input[name="personas[]"]');
         $('#todas').prop('checked', $c.length > 0 && $c.filter(':checked').length === $c.length);
@@ -157,7 +157,22 @@ function prepararFormulario(gs, prioridades) {
     $p.val('2');
 }
 
+/* null = creando; al editar guarda { tarea, avances } */
+var editando = null;
+
+function modoFormulario(edicion) {
+    $('#dlg_nueva_titulo').text(edicion ? 'Editar tarea' : 'Nueva tarea');
+    $('#dlg_nueva_nota').text(edicion
+        ? 'Corrige los datos o a quién está asignada. Quien ya entregó no se puede quitar.'
+        : 'Se asigna de una vez a todas las personas que marques; cada una hace su propia entrega.');
+    $('#nueva_enviar').text(edicion ? 'Guardar cambios' : 'Asignar tarea');
+    $('#campo_grupo').prop('hidden', !!edicion);
+    $('#campo_grupo_fijo').prop('hidden', !edicion);
+}
+
 function abrirNueva() {
+    editando = null;
+    modoFormulario(false);
     $('#nueva_form')[0].reset();
     $('#descrip').summernote('code', '');
     $('#fech_limite').val('').trigger('cp-fecha');
@@ -167,7 +182,23 @@ function abrirNueva() {
     Copeba.dialogo('dlg_nueva');
 }
 
+/* Abre el mismo formulario con los datos de la tarea (desde el detalle) */
+function abrirEditar(t, avances) {
+    editando = { tarea: t, avances: avances };
+    modoFormulario(true);
+    $('#nueva_form')[0].reset();
+    $('#grupo_fijo').text(t.area_nom + (t.sede_nom ? ' · ' + t.sede_nom : ''));
+    $('#titulo').val(t.tarea_titulo);
+    $('#descrip').summernote('code', t.tarea_descrip || '');
+    $('#prio_id').val(String(t.prio_id));
+    $('#fech_limite').val(t.fech_limite || '').trigger('cp-fecha');
+    cargarPersonas();
+    Copeba.dialogo('dlg_detalle', false);
+    Copeba.dialogo('dlg_nueva');
+}
+
 function grupoElegido() {
+    if (editando) { return { area_id: editando.tarea.area_id, sede_id: editando.tarea.sede_id, area_nom: editando.tarea.area_nom }; }
     var i = $('#grupo').val();
     return i === '' || i === null ? null : grupos[Number(i)];
 }
@@ -176,41 +207,83 @@ function cargarPersonas() {
     var g = grupoElegido(), $p = $('#personas');
     if (!g) { $p.html('<p class="cp-suave">Primero elige el área.</p>'); return; }
     $p.html('<p class="cp-suave">Cargando personas…</p>');
-    $.post(URL_TAREA + 'personas', { area_id: g.area_id, sede_id: g.sede_id || '' }).done(function (r) {
-        var personas = Copeba.leer(r) || [];
+    var asignadas = {};
+    (editando ? editando.avances : []).forEach(function (a) { asignadas[Number(a.usu_id)] = a; });
+    $.post(URL_TAREA + 'personas', { area_id: g.area_id, sede_id: g.sede_id || '' }).always(function (r, estado) {
+        var personas = estado === 'success' ? (Copeba.leer(r) || []) : [];
+        if (!$.isArray(personas)) { personas = []; }
+        /* Al editar: quienes ya tienen la tarea aparecen aunque ya no estén en el área */
+        var vistos = {};
+        personas.forEach(function (x) { vistos[Number(x.usu_id)] = true; });
+        $.each(asignadas, function (id, a) {
+            if (!vistos[id]) {
+                var partes = String(a.nombre || '').split(' ');
+                personas.push({ usu_id: id, usu_nom: partes.shift(), usu_ape: partes.join(' '), area_nom: g.area_nom });
+            }
+        });
         $p.empty();
         if (!personas.length) { $p.html('<p class="cp-suave">No hay otras personas en esta área.</p>'); return; }
-        $p.append($('<label class="cp-tarea-persona cp-tarea-todas">').append(
+        $p.append($('<label class="cp-tarea-persona cp-tarea-todas cp-fijo">').append(
             $('<input type="checkbox" id="todas">'), $('<span>').text('Toda el área (' + personas.length + ')')));
         personas.forEach(function (x) {
             /* Puesto (o función) · área si es de otra (Jefatura de Agencia) · sede si el área abarca varias */
             var detalle = [x.puesto || x.fun_nom, x.area_nom !== g.area_nom ? x.area_nom : '', g.sede_id ? '' : x.sede_nom]
                 .filter(Boolean).join(' · ');
+            var a = asignadas[Number(x.usu_id)];
+            /* Quien ya entregó o fue revisado queda fijo: su trabajo no se pierde */
+            var fija = !!a && (a.tu_estado === 'entregada' || a.tu_estado === 'revisada');
+            if (fija) { detalle = [detalle, 'ya entregó'].filter(Boolean).join(' · '); }
             $p.append($('<label class="cp-tarea-persona">').append(
-                $('<input type="checkbox" name="personas[]">').val(x.usu_id),
+                $('<input type="checkbox" name="personas[]">').val(x.usu_id).prop({ checked: !!a, disabled: fija }),
                 $('<span>').text(x.usu_nom + ' ' + x.usu_ape),
                 $('<small>').text(detalle)));
         });
+        var $c = $p.find('input[name="personas[]"]');
+        $('#todas').prop('checked', $c.length > 0 && $c.filter(':checked').length === $c.length);
+        /* "Toda el área" queda fija arriba (cp-fijo); el resto, 12 por página */
+        $p.removeData('cp-pagina');
+        Copeba.paginar($p, 12);
     });
 }
 
 function crear(e) {
     e.preventDefault();
     var g = grupoElegido();
+    var $enviar = $('#nueva_enviar');
+    if ($enviar.prop('disabled')) { return; }   /* evita crear la tarea dos veces por doble clic */
     var personas = $('#personas input[name="personas[]"]:checked').map(function () { return this.value; }).get();
     if (!g) { Copeba.aviso('Elige el área.'); return; }
     if (!personas.length) { Copeba.aviso('Marca al menos una persona.'); return; }
     if (!$.trim($('#titulo').val())) { Copeba.aviso('Escribe el título de la tarea.'); return; }
     if ($('#descrip').summernote('isEmpty')) { Copeba.aviso('Escribe las instrucciones.'); return; }
-    Copeba.enviar(URL_TAREA + 'crear', {
-        area_id: g.area_id, sede_id: g.sede_id || '', personas: personas,
+    var datos = {
+        personas: personas,
         titulo: $('#titulo').val(), descrip: $('#descrip').summernote('code'),
         prio_id: $('#prio_id').val(), fech_limite: $('#fech_limite').val()
-    }, 'No se pudo asignar la tarea.').done(function (r) {
-        Copeba.dialogo('dlg_nueva', false);
-        cargar();
-        Copeba.exito('Tarea asignada a ' + r.personas + (r.personas === 1 ? ' persona.' : ' personas.'));
-    });
+    };
+    var edicion = editando;
+    if (edicion) { datos.tarea_id = edicion.tarea.tarea_id; }
+    else { datos.area_id = g.area_id; datos.sede_id = g.sede_id || ''; }
+
+    $enviar.prop('disabled', true);
+    Copeba.enviar(URL_TAREA + (edicion ? 'editar' : 'crear'), datos,
+                  edicion ? 'No se pudo guardar la tarea.' : 'No se pudo asignar la tarea.')
+        .always(function () { $enviar.prop('disabled', false); })
+        .done(function (r) {
+            Copeba.dialogo('dlg_nueva', false);
+            cargar();
+            if (!edicion) {
+                Copeba.exito('Tarea asignada a ' + r.personas + (r.personas === 1 ? ' persona.' : ' personas.'));
+                return;
+            }
+            editando = null;
+            abrirDetalle(edicion.tarea.tarea_id);
+            if (r.conservadas && r.conservadas.length) {
+                Copeba.aviso('Cambios guardados. No se quitó a ' + r.conservadas.join(', ') + ' porque ya entregó.');
+            } else {
+                Copeba.exito('Tarea actualizada.');
+            }
+        });
 }
 
 /* ---------- Detalle ---------- */
@@ -250,6 +323,9 @@ function pintarDetalle(d) {
             }, { peligro: true });
         }));
         $pie.append($('<span class="cp-tarea-espacio">'));
+        $pie.append($('<button type="button" class="cp-btn cp-btn-borde">').text('Editar tarea').on('click', function () {
+            abrirEditar(t, d.avances);
+        }));
     }
     $pie.append($('<button type="button" class="cp-btn cp-btn-borde" data-cerrar>').text('Cerrar'));
 }
