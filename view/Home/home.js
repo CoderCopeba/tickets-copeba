@@ -37,7 +37,7 @@
                 $('<td class="cp-mono">').attr('data-orden', Number(t.tick_id)).text(Copeba.folio(t.tick_id)),
                 $('<td>').text(t.tick_titulo),
                 $('<td class="cp-suave">').text(t.cat_nom),
-                $('<td>').append(Copeba.estado(t.tick_estado)),
+                $('<td>').append(Copeba.estado(t.tick_estado, Number(t.vencido) === 1)),
                 $('<td>').append(soporte(t)),
                 $('<td class="cp-mono">').attr('data-orden', t.fech_crea || '').text(Copeba.fecha(t.fech_crea)),
                 $('<td class="cp-acciones-fila">').append(
@@ -124,29 +124,42 @@
         $.each(items, function (_, x) { $l.append(fila(x)); });
     }
 
+    /* Lista con 5 por página (Copeba.paginar) en lugar de scroll */
+    function listaPaginada(sel, items, vacio, fila) {
+        lista(sel, items, vacio, fila);
+        Copeba.paginar(sel, 5);
+    }
+
+    /* Fila de lista con flecha para ir al detalle (sin enlaces subrayados) */
+    var FLECHA = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+    function filaIr(titulo, href, $meta) {
+        return $('<li class="cp-lista-ir">').append(
+            $('<div>').append($('<strong>').text(titulo), $meta),
+            $('<a class="cp-ver">').attr({ href: href, title: 'Abrir', 'aria-label': 'Abrir ' + titulo }).html(FLECHA)
+        );
+    }
+
     function horas(h) {
         h = Number(h);
         return h >= 48 ? Math.floor(h / 24) + ' días' : h + ' h';
     }
 
     function pintarPanelAdmin(d) {
-        lista('#lista_fuera_tiempo', d.fuera_tiempo, 'Ningún ticket fuera de tiempo. ¡Bien!', function (t) {
-            return $('<li>').append(
-                $('<a class="cp-link-tabla">').attr('href', '../DetalleTicket/?ID=' + encodeURIComponent(t.tick_id))
-                    .text(Copeba.folio(t.tick_id) + ' · ' + t.tick_titulo),
+        listaPaginada('#lista_fuera_tiempo', d.fuera_tiempo, 'Ningún ticket fuera de tiempo. ¡Bien!', function (t) {
+            return filaIr(Copeba.folio(t.tick_id) + ' · ' + t.tick_titulo,
+                '../DetalleTicket/?ID=' + encodeURIComponent(t.tick_id),
                 $('<span class="cp-lista-meta">').append(
                     $('<span class="cp-prioridad">').addClass('p' + t.prio_id).text(t.prio_nom),
                     $('<span>').text('vencido hace ' + horas(t.horas_vencido) + ' · ' + (t.asignado || 'sin asignar'))
-                )
-            );
+                ));
         });
-        lista('#lista_sin_area', d.sin_area, 'Todas las cuentas tienen área.', function (u) {
+        listaPaginada('#lista_sin_area', d.sin_area, 'Todas las cuentas tienen área.', function (u) {
             return $('<li>').append($('<strong>').text(u.nombre), $('<span class="cp-lista-meta cp-mono">').text(u.usuario));
         });
         var cuentasAreas = [];
         $.each(d.vencidas || [], function (_, u) { cuentasAreas.push({ t: 'Temporal vencida: ' + u.nombre, m: u.usuario }); });
         $.each(d.areas_vacias || [], function (_, a) { cuentasAreas.push({ t: 'Área sin integrantes: ' + a.nombre, m: 'Áreas y sedes' }); });
-        lista('#lista_cuentas_areas', cuentasAreas, 'Sin temporales vencidas ni áreas vacías.', function (x) {
+        listaPaginada('#lista_cuentas_areas', cuentasAreas, 'Sin temporales vencidas ni áreas vacías.', function (x) {
             return $('<li>').append($('<strong>').text(x.t), $('<span class="cp-lista-meta">').text(x.m));
         });
     }
@@ -157,37 +170,31 @@
     function chipDia(fecha, hoyIso) {
         var f = String(fecha || '').slice(0, 10);
         return f < hoyIso
-            ? $('<span class="cp-estado cp-dia-atrasado">').text('Atrasado · ' + Copeba.fecha(f))
-            : $('<span class="cp-estado pendiente">').text('Hoy');
+            ? $('<span class="cp-estado cerrado">').text('Atrasado · ' + Copeba.fecha(f))
+            : $('<span class="cp-estado proceso">').text('Hoy');
     }
 
     function pintarMiDia(d) {
         if (!d) { return; }
-        lista('#dia_tareas', d.tareas, 'No tienes tareas que venzan hoy.', function (t) {
-            return $('<li>').append(
-                $('<a class="cp-link-tabla" href="../Tareas/">').text(t.titulo),
+        listaPaginada('#dia_tareas', d.tareas, 'No tienes tareas que venzan hoy.', function (t) {
+            return filaIr(t.titulo, '../Tareas/',
                 $('<span class="cp-lista-meta">').append(
                     chipDia(t.fecha, d.hoy),
                     $('<span>').text((ESTADO_TAREA[t.estado] || t.estado) + ' · ' + t.detalle)
-                )
-            );
+                ));
         });
-        lista('#dia_plan', d.plan, 'Nada pendiente en tu planificación para hoy.', function (a) {
-            return $('<li>').append(
-                $('<a class="cp-link-tabla" href="../Planificacion/">').text(a.titulo),
-                $('<span class="cp-lista-meta">').append(chipDia(a.fecha, d.hoy), $('<span>').text(a.detalle))
-            );
+        listaPaginada('#dia_plan', d.plan, 'Nada pendiente en tu planificación para hoy.', function (a) {
+            return filaIr(a.titulo, '../Planificacion/',
+                $('<span class="cp-lista-meta">').append(chipDia(a.fecha, d.hoy), $('<span>').text(a.detalle)));
         });
         if (d.criticos) {
-            lista('#dia_criticos', d.criticos, 'Ningún ticket crítico abierto. ¡Bien!', function (t) {
-                return $('<li>').append(
-                    $('<a class="cp-link-tabla">').attr('href', '../DetalleTicket/?ID=' + encodeURIComponent(t.id))
-                        .text(Copeba.folio(t.id) + ' · ' + t.titulo),
+            listaPaginada('#dia_criticos', d.criticos, 'Ningún ticket crítico abierto. ¡Bien!', function (t) {
+                return filaIr(Copeba.folio(t.id) + ' · ' + t.titulo,
+                    '../DetalleTicket/?ID=' + encodeURIComponent(t.id),
                     $('<span class="cp-lista-meta">').append(
                         $('<span class="cp-prioridad p4">').text('Crítica'),
                         $('<span>').text(t.detalle + ' · ' + Copeba.fecha(t.fecha))
-                    )
-                );
+                    ));
             });
         }
     }

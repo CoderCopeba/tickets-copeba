@@ -15,6 +15,8 @@ class Tarea extends Conectar {
     const ENTREGADA = "entregada";
     const REVISADA  = "revisada";
     const DEVUELTA  = "devuelta";
+    /* Persona quitada al editar la tarea (la cuenta de la app no puede borrar filas) */
+    const QUITADA   = "quitada";
 
     private function todos($sql, array $p = array()){
         $s = $this->Conexion()->prepare($sql);
@@ -141,7 +143,7 @@ class Tarea extends Conectar {
             INNER JOIN tm_area a ON a.area_id = t.area_id
             INNER JOIN tm_usuario c ON c.usu_id = t.usu_crea
             INNER JOIN tm_prioridad p ON p.prio_id = t.prio_id
-            WHERE tu.usu_id = ?
+            WHERE tu.usu_id = ? AND tu.tu_estado <> 'quitada'
             ORDER BY t.fech_crea DESC", array((int)$usu_id));
     }
 
@@ -159,7 +161,7 @@ class Tarea extends Conectar {
             LEFT JOIN tm_sede s ON s.sede_id = t.sede_id
             INNER JOIN tm_usuario c ON c.usu_id = t.usu_crea
             INNER JOIN tm_prioridad p ON p.prio_id = t.prio_id
-            INNER JOIN td_tarea_usuario tu ON tu.tarea_id = t.tarea_id
+            INNER JOIN td_tarea_usuario tu ON tu.tarea_id = t.tarea_id AND tu.tu_estado <> 'quitada'
             WHERE t.est = 1";
         $p = array();
         if (!$es_admin){
@@ -198,7 +200,7 @@ class Tarea extends Conectar {
                    tu.tu_entrega, tu.tu_observacion, tu.fech_entrega, tu.fech_revision
             FROM td_tarea_usuario tu
             INNER JOIN tm_usuario u ON u.usu_id = tu.usu_id
-            WHERE tu.tarea_id = ?
+            WHERE tu.tarea_id = ? AND tu.tu_estado <> 'quitada'
             ORDER BY u.usu_nom, u.usu_ape", array((int)$tarea_id));
     }
 
@@ -238,6 +240,67 @@ class Tarea extends Conectar {
             UPDATE td_tarea_usuario SET tu_estado = ?, tu_observacion = ?, fech_revision = NOW()
             WHERE tarea_id = ? AND usu_id = ? AND tu_estado = 'entregada'",
             array($decision, $observacion, (int)$tarea_id, (int)$usu_id)) > 0;
+    }
+
+    /* ---------- Editar ---------- */
+
+    /* Cambia los datos de la tarea y a quién está asignada, todo o nada.
+       - Personas nuevas: se agregan en "pendiente" (o vuelven a "pendiente" si las habían quitado).
+       - Personas desmarcadas: pasan a "quitada", salvo que ya entregaron o fueron revisadas
+         (su trabajo no se pierde). Devuelve la lista de nombres que no se pudieron quitar. */
+    public function editar($tarea_id, array $d, array $personas){
+        $tarea_id = (int)$tarea_id;
+        $pdo = $this->Conexion();
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare("
+                UPDATE tm_tarea SET prio_id = ?, tarea_titulo = ?, tarea_descrip = ?, fech_limite = ?
+                WHERE tarea_id = ? AND est = 1")
+                ->execute(array($d["prio_id"], $d["titulo"], $d["descrip"], $d["fech_limite"], $tarea_id));
+
+            $s = $pdo->prepare("
+                SELECT tu.usu_id, tu.tu_estado, CONCAT(u.usu_nom, ' ', u.usu_ape) AS nombre
+                FROM td_tarea_usuario tu INNER JOIN tm_usuario u ON u.usu_id = tu.usu_id
+                WHERE tu.tarea_id = ?");
+            $s->execute(array($tarea_id));
+            $actuales = array();
+            foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $f){ $actuales[(int)$f["usu_id"]] = $f; }
+
+            $agregar = array(); $reactivar = array(); $quitar = array(); $conservadas = array();
+            foreach ($personas as $usu_id){
+                if (!isset($actuales[$usu_id])){ $agregar[] = $usu_id; }
+                elseif ($actuales[$usu_id]["tu_estado"] === self::QUITADA){ $reactivar[] = $usu_id; }
+            }
+            foreach ($actuales as $usu_id => $f){
+                if ($f["tu_estado"] === self::QUITADA || in_array($usu_id, $personas, true)){ continue; }
+                if (in_array($f["tu_estado"], array(self::ENTREGADA, self::REVISADA), true)){ $conservadas[] = $f["nombre"]; }
+                else { $quitar[] = $usu_id; }
+            }
+
+            if ($agregar){
+                $marcas = implode(", ", array_fill(0, count($agregar), "(?, ?)"));
+                $valores = array();
+                foreach ($agregar as $u){ $valores[] = $tarea_id; $valores[] = $u; }
+                $pdo->prepare("INSERT INTO td_tarea_usuario (tarea_id, usu_id) VALUES ".$marcas)->execute($valores);
+            }
+            if ($reactivar){
+                $pdo->prepare("UPDATE td_tarea_usuario SET tu_estado = 'pendiente', tu_entrega = NULL, tu_observacion = NULL,
+                                      fech_entrega = NULL, fech_revision = NULL
+                               WHERE tarea_id = ? AND usu_id IN (".implode(",", array_fill(0, count($reactivar), "?")).")")
+                    ->execute(array_merge(array($tarea_id), $reactivar));
+            }
+            if ($quitar){
+                $pdo->prepare("UPDATE td_tarea_usuario SET tu_estado = 'quitada'
+                               WHERE tarea_id = ? AND tu_estado IN ('pendiente', 'proceso', 'devuelta')
+                                 AND usu_id IN (".implode(",", array_fill(0, count($quitar), "?")).")")
+                    ->execute(array_merge(array($tarea_id), $quitar));
+            }
+            $pdo->commit();
+            return $conservadas;
+        } catch (Exception $e){
+            $pdo->rollBack();
+            throw $e;
+        }
     }
 
     public function anular($tarea_id){

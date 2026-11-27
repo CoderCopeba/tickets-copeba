@@ -263,15 +263,20 @@ body.with-side-menu .section-header .breadcrumb { margin: 4px 0 0; padding: 0; b
 
 .cp-estado {
     display: inline-flex; align-items: center; gap: 6px;
-    padding: 3px 10px;
+    padding: 2px 9px;
+    border: 1px solid transparent;
     border-radius: 999px;
     font-size: 11.5px; font-weight: 700;
     white-space: nowrap;
 }
 .cp-estado::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.cp-estado.abierto   { background: var(--cp-verde-suave); color: var(--cp-verde-oscuro); }
-.cp-estado.cerrado   { background: var(--cp-rojo-suave);  color: var(--cp-rojo); }
-.cp-estado.pendiente { background: var(--cp-ambar-suave); color: var(--cp-ambar); }
+.cp-estado.abierto   { background: var(--cp-verde-suave); color: var(--cp-verde-oscuro); border-color: #9fd3b0; }
+.cp-estado.cerrado   { background: var(--cp-rojo-suave);  color: var(--cp-rojo); border-color: #f4b4ae; }
+.cp-estado.pendiente { background: var(--cp-ambar-suave); color: var(--cp-ambar); border-color: #f0cf85; }
+/* Más estados con color propio (estilo "relleno con punto" y borde) */
+.cp-estado.proceso   { background: #e8effb; color: var(--cp-azul-medio); border-color: #b3c8e8; }
+.cp-estado.revisada  { background: var(--cp-verde-oscuro); color: #fff; border-color: var(--cp-verde-oscuro); }
+.cp-estado.neutro    { background: #f3f4f6; color: var(--cp-texto-suave); border-color: #e5e7eb; }
 
 .cp-ver {
     display: inline-flex; align-items: center; justify-content: center;
@@ -615,7 +620,7 @@ body.cp-con-dialogo::after { content: ""; position: fixed; inset: 0; background:
 .cp-paginacion-sep { padding: 0 4px; color: var(--cp-texto-suave); }
 .cp-listado-por { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 400; color: var(--cp-texto-suave); }
 .cp-por-pagina { width: 76px; height: 34px; }
-.cp-link-tabla { color: var(--cp-azul-medio); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.cp-link-tabla { color: var(--cp-azul-medio); font-weight: 600; text-decoration: none; }
 .cp-link-tabla:hover { color: var(--cp-verde-oscuro); }
 
 /* Campo de contraseña con ojo */
@@ -741,6 +746,9 @@ body.cp-cargando-reporte .cp-kpis, body.cp-cargando-reporte .cp-grafica, body.cp
 .cp-lista-atencion li { display: flex; flex-direction: column; gap: 3px; padding: 9px 0; border-bottom: 1px solid #f0ece3; }
 .cp-lista-atencion li:last-child { border-bottom: 0; }
 .cp-lista-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--cp-texto-suave); }
+.cp-lista-atencion li.cp-lista-ir { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+.cp-lista-ir > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cp-lista-ir .cp-ver { flex-shrink: 0; }
 .cp-atencion-ok { color: var(--cp-verde-oscuro); font-weight: 600; }
 .cp-accesos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .cp-accesos a { display: flex; align-items: center; gap: 10px; padding: 14px; border: 1px solid var(--cp-borde); border-radius: 10px; color: var(--cp-texto); font-weight: 600; font-size: 13.5px; }
@@ -771,15 +779,17 @@ body.cp-cargando-reporte .cp-kpis, body.cp-cargando-reporte .cp-grafica, body.cp
 .cp-cal-dias button { height: 34px; border: 0; border-radius: 6px; background: transparent; font: inherit; color: var(--cp-texto); cursor: pointer; }
 .cp-cal-dias button:hover, .cp-cal-dias button:focus-visible { background: var(--cp-verde-suave); outline: none; }
 .cp-cal-dias button.hoy { box-shadow: inset 0 0 0 1px var(--cp-verde-oscuro); font-weight: 700; }
+.cp-cal-dias button.en-rango { background: var(--cp-verde-suave); border-radius: 0; }
+.cp-cal-dias button.extremo { background: #cfe8d7; color: var(--cp-verde-oscuro); font-weight: 700; box-shadow: inset 0 0 0 2px var(--cp-verde-oscuro); }
 .cp-cal-dias button.elegido { background: var(--cp-verde-oscuro); color: #fff; font-weight: 700; }
 .cp-cal-pie { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--cp-borde); }
 .cp-cal-pie button { border: 0; background: none; font: inherit; font-weight: 600; color: var(--cp-azul-medio); cursor: pointer; padding: 4px 6px; }
-.cp-cal-pie button:hover { text-decoration: underline; }
+.cp-cal-pie button:hover { color: var(--cp-verde-oscuro); }
 @media print { .cp-cal { display: none !important; } }
 /* ===== Tareas por área (view/Tareas) ===== */
 #lista_asignadas { margin-bottom: 22px; }
 .cp-tarea-personas { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px;
-    max-height: 230px; overflow-y: auto; padding: 8px; border: 1px solid var(--cp-borde); border-radius: 8px; background: #fff; }
+    padding: 8px; border: 1px solid var(--cp-borde); border-radius: 8px; background: #fff; }
 .cp-tarea-personas > p { margin: 4px; }
 .cp-tarea-persona { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: center;
     margin: 0; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
@@ -869,12 +879,9 @@ th[aria-sort="ascending"] .cp-orden, th[aria-sort="descending"] .cp-orden { colo
 .cp-tarea-nombre { font-weight: 600; color: var(--cp-texto); }
 
 /* ===== Planificación (view/Planificacion) ===== */
-.cp-plan-periodo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .cp-plan-tipo { display: inline-flex; padding: 3px; border: 1px solid var(--cp-borde); border-radius: 10px; background: #fff; }
 .cp-plan-tipo button { padding: 7px 16px; border: 0; border-radius: 7px; background: transparent; font: inherit; font-size: 13px; font-weight: 600; color: var(--cp-texto-suave); cursor: pointer; }
 .cp-plan-tipo button.activa { background: var(--cp-verde-suave); color: var(--cp-verde-oscuro); }
-.cp-plan-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.cp-plan-nav strong { min-width: 210px; text-align: center; font-family: var(--cp-titulos); font-size: 14.5px; }
 .cp-plan { padding: 18px 20px; margin-bottom: 22px; }
 .cp-plan-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
 .cp-plan-cab h2 { margin: 0; font-family: var(--cp-titulos); font-size: 17px; }
@@ -900,7 +907,6 @@ th[aria-sort="ascending"] .cp-orden, th[aria-sort="descending"] .cp-orden { colo
 @media (max-width: 760px) {
     .cp-plan-act { flex-direction: column; }
     .cp-plan-nueva, .cp-plan-editar { grid-template-columns: 1fr; }
-    .cp-plan-nav strong { min-width: 0; }
 }
 /* Planificación: textos legibles, botón Entregar junto al estado y tickets */
 .cp-plan .cp-control, .cp-dialogo .cp-control { color: var(--cp-texto); }
@@ -908,8 +914,8 @@ th[aria-sort="ascending"] .cp-orden, th[aria-sort="descending"] .cp-orden { colo
 .cp-plan-cab-der { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 .cp-plan-resumen { font-size: 13px; font-weight: 600; color: var(--cp-texto); }
 .cp-plan-ticket { text-decoration: none; color: var(--cp-azul-medio); border: 1px solid #c9d7ec; background: #eef3fb; }
-.cp-plan-ticket:hover { text-decoration: underline; color: var(--cp-azul); }
-.cp-plan-tickets { display: grid; gap: 6px; max-height: 280px; overflow-y: auto; margin: 10px 0 14px; padding: 6px;
+.cp-plan-ticket:hover { color: var(--cp-azul); border-color: var(--cp-azul-medio); }
+.cp-plan-tickets { display: grid; gap: 6px; margin: 10px 0 0; padding: 6px;
     border: 1px solid var(--cp-borde); border-radius: 8px; }
 .cp-plan-tickets > p { margin: 6px; }
 .cp-plan-tk { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; margin: 0; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
@@ -924,5 +930,25 @@ th[aria-sort="ascending"] .cp-orden, th[aria-sort="descending"] .cp-orden { colo
 .cp-mi-dia { display: grid; gap: 16px; margin-bottom: 24px; }
 @media (min-width: 900px) { .cp-mi-dia { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 1200px) { .cp-mi-dia.tres { grid-template-columns: repeat(3, 1fr); } }
-.cp-mi-dia .cp-lista-atencion { max-height: 300px; overflow-y: auto; }
-.cp-estado.cp-dia-atrasado { background: var(--cp-rojo-suave); color: var(--cp-rojo); }
+.cp-paginas { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0ece3; font-size: 12px; color: var(--cp-texto-suave); }
+.cp-paginas[hidden] { display: none; }
+.cp-paginado > [hidden] { display: none !important; }
+.cp-plan-tickets + .cp-paginas { margin-bottom: 14px; }
+.cp-plan-nota-texto { display: block; white-space: pre-line; max-width: 520px; }
+/* Planificación: filtro Desde–Hasta con atajos y un bloque por periodo */
+.cp-plan-filtro { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 14px 18px; margin-bottom: 16px; }
+.cp-plan-rango { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cp-plan-rango label { margin: 0; font-size: 13px; font-weight: 700; color: var(--cp-texto); }
+.cp-plan-atajos { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.cp-chip-filtro { padding: 6px 12px; border: 1px solid var(--cp-borde); border-radius: 999px; background: #fff; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--cp-texto); cursor: pointer; }
+.cp-chip-filtro:hover { border-color: var(--cp-verde-oscuro); color: var(--cp-verde-oscuro); }
+.cp-chip-filtro.activa { background: var(--cp-verde-suave); border-color: #9fd3b0; color: var(--cp-verde-oscuro); }
+#planes.cp-cargando { pointer-events: none; }
+.cp-plan-es-actual { border-color: #9fd3b0; box-shadow: 0 0 0 1px #9fd3b0 inset; }
+.cp-plan-hoy { vertical-align: middle; font-size: 11px; background: var(--cp-verde-suave); color: var(--cp-verde-oscuro); }
+.cp-plan-nueva { grid-template-columns: 1fr auto auto auto auto; }
+@media (max-width: 760px) { .cp-plan-atajos { margin-left: 0; } .cp-plan-nueva { grid-template-columns: 1fr; } }
+
+/* Regla del sistema: ningún enlace subrayado. Lo que lleva a otra página va como
+   botón o flecha (.cp-btn, .cp-ver), nunca como nombre subrayado. */
+a, a:hover, a:focus, .cp-link, .cp-link:hover { text-decoration: none !important; }

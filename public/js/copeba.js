@@ -226,7 +226,8 @@ var Copeba = (function ($) {
     }
 
     function folio(id) {
-        return '#' + ('000' + id).slice(-3);
+        var s = String(id);   /* rellena a 3 cifras pero nunca recorta (TiDB salta números: 30157) */
+        return '#' + (s.length < 3 ? ('000' + s).slice(-3) : s);
     }
 
     /* "2026-11-23 10:30:00" -> "23/11/2026" */
@@ -247,10 +248,51 @@ var Copeba = (function ($) {
         return ((partes[0] || '').charAt(0) + (partes[1] || '').charAt(0)).toUpperCase() || '?';
     }
 
-    /* Etiqueta de estado del ticket: Abierto (verde), En espera (ámbar), Cerrado (rojo) */
-    var CLASE_ESTADO = { 'Abierto': 'abierto', 'En espera': 'pendiente', 'Cerrado': 'cerrado' };
-    function estado(texto) {
-        return $('<span class="cp-estado">').addClass(CLASE_ESTADO[texto] || 'abierto').text(texto);
+    /* Tickets: Abierto = en atención (azul), En espera = aviso (ámbar), Cerrado = resuelto (verde) */
+    var CLASE_ESTADO = { 'Abierto': 'proceso', 'En espera': 'pendiente', 'Cerrado': 'abierto' };
+    /* vencido = abierto o en espera que ya superó su tiempo objetivo (SLA): se ve en rojo */
+    function estado(texto, vencido) {
+        if (vencido && texto !== 'Cerrado') {
+            return $('<span class="cp-estado cerrado">').text(texto + ' · vencido').attr('title', 'Superó su tiempo objetivo');
+        }
+        return $('<span class="cp-estado">').addClass(CLASE_ESTADO[texto] || 'proceso').text(texto);
+    }
+
+    /* ---------- Paginación de listas pequeñas (en lugar de scroll) ----------
+       Copeba.paginar('#lista') muestra 5 elementos por página y pone debajo
+       "‹ Anterior · 1 / 3 · 12 en total · Siguiente ›". No borra nada: solo oculta,
+       así las casillas marcadas en otras páginas se conservan. Llámalo de nuevo cada
+       vez que vuelvas a dibujar la lista; recuerda la página en la que estabas.
+       Si un elemento tiene un radio/casilla marcado y es la primera vez, abre su página. */
+    function paginar(contenedor, porPagina) {
+        var $c = $(contenedor).first();
+        if (!$c.length) { return; }
+        porPagina = porPagina || 5;
+        var $items = $c.children().not('.cp-vacio, .cp-atencion-ok, .cp-fijo, p');
+        var total = Math.max(1, Math.ceil($items.length / porPagina));
+        var pag = $c.data('cp-pagina');
+        if (pag === undefined) {
+            var marcado = $items.index($items.filter(function () { return $(this).find('input:checked').length > 0; }).first());
+            pag = marcado > 0 ? Math.floor(marcado / porPagina) : 0;
+        }
+        pag = Math.max(0, Math.min(pag, total - 1));
+        $c.data('cp-pagina', pag);
+        $c.addClass('cp-paginado');
+        $items.each(function (i) { this.hidden = Math.floor(i / porPagina) !== pag; });
+
+        var $pie = $c.next('.cp-paginas');
+        if (!$pie.length) { $pie = $('<div class="cp-paginas">').insertAfter($c); }
+        $pie.empty().prop('hidden', total < 2);
+        if (total < 2) { return; }
+        function ir(texto, destino, activo) {
+            return $('<button type="button" class="cp-btn cp-btn-borde cp-btn-chico">').text(texto).prop('disabled', !activo)
+                .on('click', function () { $c.data('cp-pagina', destino); paginar($c, porPagina); });
+        }
+        $pie.append(
+            ir('‹ Anterior', pag - 1, pag > 0),
+            $('<span class="cp-mono">').text((pag + 1) + ' / ' + total + ' · ' + $items.length + ' en total'),
+            ir('Siguiente ›', pag + 1, pag < total - 1)
+        );
     }
 
     /* ---------- Calendario propio para <input type="date"> ----------
@@ -259,7 +301,10 @@ var Copeba = (function ($) {
        flechas, "Hoy" y "Borrar". El <input> original queda oculto y conserva el valor
        en formato AAAA-MM-DD, así el resto del código no cambia (.val() y 'change').
        Se aplica solo a todo input[type=date] al cargar la página. Si cambias el valor
-       por código, avisa con: $('#campo').val('2026-01-31').trigger('cp-fecha'); */
+       por código, avisa con: $('#campo').val('2026-01-31').trigger('cp-fecha');
+       Rango Desde–Hasta: pon data-rango-con="#otro_campo" en los dos inputs. Así cada
+       calendario abre en el mes de la otra fecha (si el suyo está vacío) y pinta el
+       rango: el otro extremo marcado y los días de en medio sombreados. */
     var MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
                  'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
     var DIAS = ['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO'];
@@ -309,13 +354,22 @@ var Copeba = (function ($) {
             $boton.text(d ? fecha($in.val()) : 'dd/mm/aaaa').toggleClass('vacio', !d);
         }
 
-        function pintar() {
+        /* Fecha del otro extremo del rango (si este input forma parte de uno) */
+        function otraFecha() {
+            var sel = $in.attr('data-rango-con');
+            return sel ? ($(sel).val() || '') : '';
+        }
+
+        function pintar(sobre) {
             var anio = visto.getFullYear(), m = visto.getMonth();
             if (!$anio.find('option[value="' + anio + '"]').length) {
                 $anio.append($('<option>').val(anio).text(anio));
             }
             $mes.val(m); $anio.val(anio);
             var elegido = $in.val(), hoy = aIso(new Date());
+            /* Rango a sombrear: entre la otra fecha y la elegida (o la que está bajo el mouse) */
+            var otra = otraFecha(), punta = sobre || elegido, rIni = '', rFin = '';
+            if (otra && punta) { rIni = otra < punta ? otra : punta; rFin = otra < punta ? punta : otra; }
             var inicio = (new Date(anio, m, 1).getDay() + 6) % 7;   /* semana empieza en lunes */
             var total = new Date(anio, m + 1, 0).getDate();
             $rejilla.empty();
@@ -323,12 +377,14 @@ var Copeba = (function ($) {
             for (var dia = 1; dia <= total; dia++) {
                 var iso = aIso(new Date(anio, m, dia));
                 $rejilla.append($('<button type="button">').text(dia).attr('data-iso', iso)
-                    .toggleClass('elegido', iso === elegido).toggleClass('hoy', iso === hoy));
+                    .toggleClass('elegido', iso === elegido).toggleClass('hoy', iso === hoy)
+                    .toggleClass('extremo', !!otra && iso === otra)
+                    .toggleClass('en-rango', !!rIni && iso > rIni && iso < rFin));
             }
         }
 
         function abrir() {
-            visto = deIso($in.val()) || new Date();
+            visto = deIso($in.val()) || deIso(otraFecha()) || new Date();
             visto.setDate(1);
             pintar();
             $panel.removeClass('arriba').prop('hidden', false);
@@ -363,6 +419,17 @@ var Copeba = (function ($) {
         $mes.on('change', function () { visto.setMonth(Number($mes.val())); pintar(); });
         $anio.on('change', function () { visto.setFullYear(Number($anio.val())); pintar(); });
         $rejilla.on('click', 'button', function () { elegir($(this).attr('data-iso')); });
+        /* Vista previa del rango al pasar el mouse (solo si hay otra fecha) */
+        $rejilla.on('mouseenter', 'button', function () {
+            if (!otraFecha()) { return; }
+            var iso = $(this).attr('data-iso'), otra = otraFecha();
+            var a = otra < iso ? otra : iso, b = otra < iso ? iso : otra;
+            $rejilla.find('button').each(function () {
+                var d = $(this).attr('data-iso');
+                $(this).toggleClass('en-rango', d > a && d < b);
+            });
+        });
+        $rejilla.on('mouseleave', function () { if (!$panel.prop('hidden')) { pintar(); } });
         $panel.on('click', '[data-accion="hoy"]', function () { elegir(aIso(new Date())); });
         $panel.on('click', '[data-accion="borrar"]', function () { elegir(''); });
         $panel.on('keydown', function (e) { if (e.key === 'Escape') { cerrar(); $boton.trigger('focus'); } });
@@ -378,7 +445,7 @@ var Copeba = (function ($) {
     return {
         exito: exito, aviso: aviso, error: error, confirmar: confirmar, pedirTexto: pedirTexto, dialogo: dialogo,
         leer: leer, enviar: enviar,
-        editor: editor, calendario: calendario,
+        editor: editor, calendario: calendario, paginar: paginar,
         param: param, folio: folio, fecha: fecha, hora: hora, iniciales: iniciales, estado: estado
     };
 })(jQuery);

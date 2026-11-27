@@ -31,7 +31,7 @@ $(function () {
         { titulo: 'Categoría', clase: 'cp-suave', render: function (t) { return t.categoria; } },
         { titulo: 'Urgencia', orden: function (t) { return Number(t.prio_id); }, render: function (t) { return $('<span class="cp-prioridad">').addClass('p' + t.prio_id).text(t.prioridad); } },
         { titulo: 'Estado', render: function (t) {
-            var chip = Copeba.estado(t.estado);
+            var chip = Copeba.estado(t.estado, t.vencido);
             if (atiende && t.estado === 'Cerrado') {    /* reabrir desde la lista */
                 return $('<button type="button" class="cp-chip-boton" title="Reabrir">').attr('data-reabrir', t.id).append(chip);
             }

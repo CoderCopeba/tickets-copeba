@@ -28,7 +28,7 @@
         <span class="cp-side-logo"><img src="../../public/img/copeba/distintivo-copeba.png" alt=""></span>
         <span>
             <strong>Copeba, R.L.</strong>
-            <small>Mesa de Ayuda</small>
+            <small>Sistema Interno</small>
         </span>
     </a>
 

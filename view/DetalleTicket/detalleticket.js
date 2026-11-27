@@ -69,8 +69,8 @@ function pintar(r) {
     var t = r.ticket, p = r.permisos, cerrado = t.estado === 'Cerrado';
 
     document.title = 'Copeba · Ticket ' + Copeba.folio(t.id);
-    $('#lbl_folio').text('TK-' + ('000' + t.id).slice(-3));
-    $('#lbl_estado').empty().append(etiquetaEstado(t));
+    $('#lbl_folio').text('TK-' + Copeba.folio(t.id).slice(1));
+    $('#lbl_estado').empty().append(etiquetaEstado(t, r.ahora));
     $('#lbl_titulo').text(t.titulo);
 
     /* Solicitud original */
@@ -84,7 +84,7 @@ function pintar(r) {
     $('#f_categoria').text(t.categoria);
     $('#f_prioridad').empty().append(etiquetaSla(t, r.ahora));
     $('#f_asignado').text(t.asignado || 'Sin asignar').toggleClass('cp-suave', !t.asignado);
-    $('#f_estado').empty().append(etiquetaEstado(t));
+    $('#f_estado').empty().append(etiquetaEstado(t, r.ahora));
     $('#f_creado').text(Copeba.fecha(t.fecha) + ' ' + Copeba.hora(t.fecha));
     $('#f_cierre, #f_cierre_t').prop('hidden', !(cerrado && t.fech_cierre));
     if (cerrado && t.fech_cierre) { $('#f_cierre').text(Copeba.fecha(t.fech_cierre) + ' ' + Copeba.hora(t.fech_cierre)); }
@@ -97,7 +97,10 @@ function pintar(r) {
 }
 
 /* "En atención" = abierto y con técnico asignado */
-function etiquetaEstado(t) {
+function etiquetaEstado(t, ahora) {
+    /* Abierto o en espera fuera de su tiempo objetivo: rojo */
+    var vencido = t.estado !== 'Cerrado' && !!t.sla_limite && !!ahora && t.sla_limite < ahora;
+    if (vencido) { return Copeba.estado(t.estado, true); }
     if (t.estado === 'Abierto' && t.asignado) {
         return Copeba.estado('Abierto').text('En atención');
     }

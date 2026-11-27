@@ -16,10 +16,10 @@
         <div class="container-fluid">
             <header class="cp-encabezado">
                 <div>
-                    <small>Mesa de Ayuda · Copeba, R.L.</small>
+                    <small>Sistema Interno · Cooperativa Copeba, R.L.</small>
                     <h1>Tickets</h1>
                 </div>
-                <p class="cp-encabezado-nota"><?php echo $soporte ? "Todas las solicitudes de la mesa de ayuda" : "Las solicitudes que has reportado"; ?></p>
+                <p class="cp-encabezado-nota"><?php echo $soporte ? "Todas las solicitudes de soporte" : "Las solicitudes que has reportado"; ?></p>
             </header>
 
             <div id="lista_tickets"></div>

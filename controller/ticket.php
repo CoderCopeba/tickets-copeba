@@ -337,6 +337,7 @@
                     "categoria"   => $r["cat_nom"],
                     "prioridad"   => $r["prio_nom"],
                     "prio_id"     => (int)$r["prio_id"],
+                    "vencido"     => (int)$r["vencido"] === 1,
                     "fecha"       => $r["fech_crea"],
                     "fech_asig"   => $r["fech_asig"],
                     "solicitante" => $r["solicitante"],

@@ -55,6 +55,52 @@ class Plan extends Conectar {
         );
     }
 
+    /* Periodos (semanas o meses) que tocan el rango [desde, hasta], en orden.
+       Devuelve null si algo no es válido o si son más de $max. */
+    public static function periodos($tipo, $desde, $hasta, $max = 12){
+        $p = self::periodo($tipo, $desde);
+        if ($p === null || self::periodo($tipo, $hasta) === null || $hasta < $desde){ return null; }
+        $lista = array();
+        while ($p["inicio"] <= $hasta){
+            $lista[] = $p;
+            if (count($lista) > $max){ return null; }
+            $p = self::periodo($tipo, (new DateTime($p["fin"]))->modify("+1 day")->format("Y-m-d"));
+        }
+        return $lista;
+    }
+
+    /* Mis planes de esos periodos (una consulta), por fecha de inicio */
+    public function planes_rango($usu_id, $tipo, $inicio, $fin){
+        $por_inicio = array();
+        foreach ($this->todos("
+            SELECT pl.*, CONCAT(r.usu_nom, ' ', r.usu_ape) AS revisado_por
+            FROM tm_plan pl LEFT JOIN tm_usuario r ON r.usu_id = pl.usu_revisa
+            WHERE pl.usu_id = ? AND pl.plan_tipo = ? AND pl.fech_inicio BETWEEN ? AND ?",
+            array((int)$usu_id, $tipo, $inicio, $fin)) as $f){
+            $por_inicio[$f["fech_inicio"]] = $f;
+        }
+        return $por_inicio;
+    }
+
+    /* Actividades de varios planes (una consulta), agrupadas por plan_id */
+    public function actividades_de(array $plan_ids){
+        if (!$plan_ids){ return array(); }
+        $marcas = implode(",", array_fill(0, count($plan_ids), "?"));
+        $por_plan = array();
+        foreach ($this->todos("
+            SELECT a.plan_id, a.act_id, a.act_texto, a.act_dia, a.act_estado, a.act_justificacion, a.act_extra,
+                   a.act_origen_id, a.fech_cierre, o.act_justificacion AS origen_justificacion,
+                   a.act_tick_id, t.tick_titulo, t.tick_estado
+            FROM td_plan_actividad a
+            LEFT JOIN td_plan_actividad o ON o.act_id = a.act_origen_id
+            LEFT JOIN tm_ticket t ON t.tick_id = a.act_tick_id
+            WHERE a.plan_id IN (".$marcas.") AND a.est = 1
+            ORDER BY a.act_dia IS NULL, a.act_dia, a.act_id", array_map("intval", $plan_ids)) as $a){
+            $por_plan[(int)$a["plan_id"]][] = $a;
+        }
+        return $por_plan;
+    }
+
     /* ¿Se entregó tarde? (después del día anterior al inicio) */
     public static function tarde($fech_entrega, $plazo){
         return $fech_entrega !== null && substr($fech_entrega, 0, 10) > $plazo;
@@ -190,6 +236,42 @@ class Plan extends Conectar {
             ORDER BY t.prio_id DESC, t.fech_crea", array((int)$usu_id));
     }
 
+    /* Notas internas de TI en los tickets de los últimos 60 días (máx. 300), la más
+       reciente primero: avisos como "se acabó la pasta térmica" para planificar compras.
+       El texto se devuelve plano (sin HTML). Solo para quien atiende tickets. */
+    public function notas_internas(){
+        $filas = $this->todos("
+            SELECT d.tickd_id, d.tickd_descrip, d.fech_crea, t.tick_id, t.tick_titulo, t.tick_estado,
+                   TRIM(CONCAT(u.usu_nom, ' ', u.usu_ape)) AS autor
+            FROM td_ticketdetalle d
+            INNER JOIN tm_ticket t ON t.tick_id = d.tick_id AND t.est = 1
+            INNER JOIN tm_usuario u ON u.usu_id = d.usu_id
+            WHERE d.tickd_tipo = 'nota' AND d.est = 1 AND d.fech_crea >= NOW() - INTERVAL 60 DAY
+            ORDER BY d.fech_crea DESC, d.tickd_id DESC
+            LIMIT 300");
+        foreach ($filas as &$f){
+            $texto = preg_replace('/<(br|\/p|\/div|\/li)[^>]*>/i', "\n", (string)$f["tickd_descrip"]);
+            $texto = html_entity_decode(strip_tags($texto), ENT_QUOTES | ENT_HTML5, "UTF-8");
+            $texto = trim(preg_replace("/[ \t]*\n\s*/", "\n", preg_replace('/[ \t\x{00A0}]+/u', " ", $texto)));
+            $f["nota"] = mb_strlen($texto) > 400 ? mb_substr($texto, 0, 400)."…" : $texto;
+            unset($f["tickd_descrip"]);
+        }
+        return $filas;
+    }
+
+    /* Número visible de una nota interna: 001, 004, 30157 (rellena, nunca recorta) */
+    public static function folio_nota($tickd_id){
+        return str_pad((string)(int)$tickd_id, 3, "0", STR_PAD_LEFT);
+    }
+
+    /* Una nota interna vigente (para planificar a partir de ella); si no, null */
+    public function nota(){
+        return $this->fila("
+            SELECT d.tickd_id, d.tick_id FROM td_ticketdetalle d
+            INNER JOIN tm_ticket t ON t.tick_id = d.tick_id AND t.est = 1
+            WHERE d.tickd_id = ? AND d.tickd_tipo = 'nota' AND d.est = 1", array((int)$tickd_id));
+    }
+
     /* El ticket, si sigue abierto y es suyo o no tiene técnico; si no, null */
     public function ticket_planificable($tick_id, $usu_id){
         return $this->fila("
@@ -233,24 +315,24 @@ class Plan extends Conectar {
         return array_values($personas);
     }
 
-    /* Resumen de los planes del periodo para esas personas (una sola consulta) */
-    public function resumen_equipo(array $usu_ids, array $p){
+    /* Resumen de los planes de esas personas en todos los periodos de un rango (una consulta): [usu_id][fech_inicio] */
+    public function resumen_equipo_rango(array $usu_ids, $tipo, $inicio, $fin){
         if (!$usu_ids){ return array(); }
         $marcas = implode(",", array_fill(0, count($usu_ids), "?"));
         $filas = $this->todos("
-            SELECT pl.usu_id, pl.plan_id, pl.plan_estado, pl.fech_entrega,
+            SELECT pl.usu_id, pl.fech_inicio, pl.plan_id, pl.plan_estado, pl.fech_entrega,
                    COUNT(a.act_id) AS total,
                    SUM(CASE WHEN a.act_estado = 'hecho' THEN 1 ELSE 0 END) AS hechas,
                    SUM(CASE WHEN a.act_estado = 'no_cumplido' THEN 1 ELSE 0 END) AS no_cumplidas,
                    SUM(CASE WHEN a.act_estado = 'pospuesto' THEN 1 ELSE 0 END) AS pospuestas
             FROM tm_plan pl
             LEFT JOIN td_plan_actividad a ON a.plan_id = pl.plan_id AND a.est = 1
-            WHERE pl.plan_tipo = ? AND pl.fech_inicio = ? AND pl.usu_id IN (".$marcas.")
-            GROUP BY pl.usu_id, pl.plan_id, pl.plan_estado, pl.fech_entrega",
-            array_merge(array($p["tipo"], $p["inicio"]), array_map("intval", $usu_ids)));
-        $por_usuario = array();
-        foreach ($filas as $f){ $por_usuario[(int)$f["usu_id"]] = $f; }
-        return $por_usuario;
+            WHERE pl.plan_tipo = ? AND pl.fech_inicio BETWEEN ? AND ? AND pl.usu_id IN (".$marcas.")
+            GROUP BY pl.usu_id, pl.fech_inicio, pl.plan_id, pl.plan_estado, pl.fech_entrega",
+            array_merge(array($tipo, $inicio, $fin), array_map("intval", $usu_ids)));
+        $r = array();
+        foreach ($filas as $f){ $r[(int)$f["usu_id"]][$f["fech_inicio"]] = $f; }
+        return $r;
     }
 
     /* ¿Puede supervisar el plan de esa persona? Administrador o jefatura de alguno de sus grupos */

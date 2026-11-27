@@ -33,6 +33,7 @@
             $sql = parent::conexion()->prepare("
                 SELECT t.tick_id, t.tick_titulo, t.tick_estado, t.fech_crea, t.fech_asig, t.usu_asig,
                        c.cat_nom, p.prio_id, p.prio_nom,
+                       (t.tick_estado <> 'Cerrado' AND now() > t.fech_crea + INTERVAL p.prio_sla_horas HOUR) AS vencido,
                        TRIM(CONCAT(u.usu_nom, ' ', u.usu_ape)) AS solicitante,
                        TRIM(CONCAT(COALESCE(a.usu_nom, ''), ' ', COALESCE(a.usu_ape, ''))) AS asignado
                 FROM tm_ticket t
